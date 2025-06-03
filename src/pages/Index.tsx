@@ -175,8 +175,8 @@ const Index = () => {
                 <div className="space-y-4">
                   <Label>SVG Gradient (when no SVG uploaded)</Label>
                   
-                  {/* Basic Gradients - 4 per row */}
-                  <div className="grid grid-cols-4 gap-2">
+                  {/* Basic Gradients - 6 per row, total 12 colors */}
+                  <div className="grid grid-cols-6 gap-2">
                     <Button
                       onClick={() => setSvgGradient('purple')}
                       variant={svgGradient === 'purple' ? 'default' : 'outline'}
@@ -226,6 +226,18 @@ const Index = () => {
                       className="bg-gradient-to-r from-red-500 to-red-700 h-8"
                     />
                     <Button
+                      onClick={() => setSvgGradient('yellow')}
+                      variant={svgGradient === 'yellow' ? 'default' : 'outline'}
+                      size="sm"
+                      className="bg-gradient-to-r from-yellow-500 to-yellow-700 h-8"
+                    />
+                    <Button
+                      onClick={() => setSvgGradient('cyan')}
+                      variant={svgGradient === 'cyan' ? 'default' : 'outline'}
+                      size="sm"
+                      className="bg-gradient-to-r from-cyan-500 to-cyan-700 h-8"
+                    />
+                    <Button
                       onClick={() => setSvgGradient('sunset')}
                       variant={svgGradient === 'sunset' ? 'default' : 'outline'}
                       size="sm"
@@ -236,30 +248,6 @@ const Index = () => {
                       variant={svgGradient === 'ocean' ? 'default' : 'outline'}
                       size="sm"
                       className="bg-gradient-to-r from-cyan-500 to-blue-600 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-rainbow')}
-                      variant={svgGradient === 'mesh-rainbow' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-br from-red-400 via-yellow-400 to-blue-500 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-sunset')}
-                      variant={svgGradient === 'mesh-sunset' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-br from-orange-400 via-pink-500 to-purple-800 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-ocean')}
-                      variant={svgGradient === 'mesh-ocean' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-aurora')}
-                      variant={svgGradient === 'mesh-aurora' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 h-8"
                     />
                   </div>
 

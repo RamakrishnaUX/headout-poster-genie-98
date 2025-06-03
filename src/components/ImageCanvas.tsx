@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState, useCallback } from 'react';
 
 interface ImageCanvasProps {
@@ -52,12 +51,12 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     };
 
     const getImageBounds = () => {
-      // Image positioned 167px from bottom (1600 - 167 = 1433)
+      // Image positioned 167px from bottom with increased height
       return {
         x: 130, // Center 640px width: (900 - 640) / 2 = 130
-        y: 1433 - 820, // Start 820px height upward from 1433px (167px from bottom) - increased by 20px
+        y: 1433 - 836, // Start 836px height upward from 1433px (167px from bottom) - increased by 16px more
         width: 640, // Fixed width as requested
-        height: 820 // Increased height by 20px (was 800, now 820)
+        height: 836 // Increased height by 16px more (was 820, now 836)
       };
     };
 
@@ -194,6 +193,18 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           gradient.addColorStop(0, '#06b6d4');
           gradient.addColorStop(0.5, '#3b82f6');
           gradient.addColorStop(1, '#1e40af');
+          break;
+        case 'yellow':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#fbbf24');
+          gradient.addColorStop(0.5, '#f59e0b');
+          gradient.addColorStop(1, '#d97706');
+          break;
+        case 'cyan':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#22d3ee');
+          gradient.addColorStop(0.5, '#06b6d4');
+          gradient.addColorStop(1, '#0891b2');
           break;
         default:
           gradient = ctx.createLinearGradient(x, y, x, y + height);
@@ -490,7 +501,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillText('🏊 headout', svgX + 50, svgY + 80);
       }
 
-      // Draw title (54px font size)
+      // Draw title with 650px width constraint (54px font size)
       ctx.fillStyle = 'white';
       ctx.font = 'bold 54px Arial';
       ctx.textAlign = 'left';
@@ -498,18 +509,63 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       const titleLines = title.split('\n');
       let titleY = svgY + 180;
       titleLines.forEach((line) => {
-        ctx.fillText(line, svgX + 50, titleY);
-        titleY += 65;
+        // Wrap text to 650px width
+        const words = line.split(' ');
+        let currentLine = '';
+        let testLine = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          testLine = currentLine + words[i] + ' ';
+          const metrics = ctx.measureText(testLine);
+          
+          if (metrics.width > 650 && currentLine !== '') {
+            ctx.fillText(currentLine.trim(), svgX + 50, titleY);
+            titleY += 65;
+            currentLine = words[i] + ' ';
+          } else {
+            currentLine = testLine;
+          }
+        }
+        
+        if (currentLine.trim() !== '') {
+          ctx.fillText(currentLine.trim(), svgX + 50, titleY);
+          titleY += 65;
+        }
       });
 
-      // Draw subtitle (34px font size)
+      // Draw subtitle with 650px width constraint and 8px spacing from title (34px font size)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       ctx.font = '34px Arial';
-      ctx.fillText(subtitle, svgX + 50, titleY + 20);
+      
+      // 8px spacing from title
+      titleY += 8;
+      
+      // Wrap subtitle text to 650px width
+      const subtitleWords = subtitle.split(' ');
+      let currentSubtitleLine = '';
+      let testSubtitleLine = '';
+      
+      for (let i = 0; i < subtitleWords.length; i++) {
+        testSubtitleLine = currentSubtitleLine + subtitleWords[i] + ' ';
+        const metrics = ctx.measureText(testSubtitleLine);
+        
+        if (metrics.width > 650 && currentSubtitleLine !== '') {
+          ctx.fillText(currentSubtitleLine.trim(), svgX + 50, titleY);
+          titleY += 40;
+          currentSubtitleLine = subtitleWords[i] + ' ';
+        } else {
+          currentSubtitleLine = testSubtitleLine;
+        }
+      }
+      
+      if (currentSubtitleLine.trim() !== '') {
+        ctx.fillText(currentSubtitleLine.trim(), svgX + 50, titleY);
+        titleY += 40;
+      }
 
-      // Draw CTA button (94px height, 12px border radius, black text, 34px font)
+      // Draw CTA button with 16px spacing from subtitle (94px height, 12px border radius, black text, 34px font)
       const buttonX = svgX + 50;
-      const buttonY = titleY + 80;
+      const buttonY = titleY + 16; // 16px spacing from subtitle
       const buttonWidth = 220;
       const buttonHeight = 94;
       const buttonRadius = 12;
