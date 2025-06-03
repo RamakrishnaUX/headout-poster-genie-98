@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState, useCallback } from 'react';
 
 interface ImageCanvasProps {
@@ -54,9 +55,9 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       // Image positioned 167px from bottom (1600 - 167 = 1433)
       return {
         x: 130, // Center 640px width: (900 - 640) / 2 = 130
-        y: 1433 - 800, // Start 800px height upward from 1433px (167px from bottom)
+        y: 1433 - 820, // Start 820px height upward from 1433px (167px from bottom) - increased by 20px
         width: 640, // Fixed width as requested
-        height: 800 // Reduced height to fit with new positioning
+        height: 820 // Increased height by 20px (was 800, now 820)
       };
     };
 
