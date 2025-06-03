@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +15,9 @@ const Index = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedSvg, setUploadedSvg] = useState<string | null>(null);
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
-  const [svgGradient, setSvgGradient] = useState('purple'); // New state for SVG gradient
+  const [svgGradient, setSvgGradient] = useState('purple');
+  const [customGradientStart, setCustomGradientStart] = useState('#a855f7');
+  const [customGradientEnd, setCustomGradientEnd] = useState('#6b21a8');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const svgInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -171,8 +172,10 @@ const Index = () => {
                 )}
                 
                 {/* SVG Gradient Options */}
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <Label>SVG Gradient (when no SVG uploaded)</Label>
+                  
+                  {/* Basic Gradients */}
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={() => setSvgGradient('purple')}
@@ -255,6 +258,98 @@ const Index = () => {
                       Ocean
                     </Button>
                   </div>
+
+                  {/* Mesh Gradients */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Mesh Gradients</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => setSvgGradient('mesh-rainbow')}
+                        variant={svgGradient === 'mesh-rainbow' ? 'default' : 'outline'}
+                        size="sm"
+                        className="bg-gradient-to-br from-red-400 via-yellow-400 to-blue-500"
+                      >
+                        Rainbow
+                      </Button>
+                      <Button
+                        onClick={() => setSvgGradient('mesh-sunset')}
+                        variant={svgGradient === 'mesh-sunset' ? 'default' : 'outline'}
+                        size="sm"
+                        className="bg-gradient-to-br from-orange-400 via-pink-500 to-purple-800"
+                      >
+                        Sunset Mesh
+                      </Button>
+                      <Button
+                        onClick={() => setSvgGradient('mesh-ocean')}
+                        variant={svgGradient === 'mesh-ocean' ? 'default' : 'outline'}
+                        size="sm"
+                        className="bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500"
+                      >
+                        Ocean Mesh
+                      </Button>
+                      <Button
+                        onClick={() => setSvgGradient('mesh-aurora')}
+                        variant={svgGradient === 'mesh-aurora' ? 'default' : 'outline'}
+                        size="sm"
+                        className="bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600"
+                      >
+                        Aurora
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Custom Gradient */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setSvgGradient('custom')}
+                        variant={svgGradient === 'custom' ? 'default' : 'outline'}
+                        size="sm"
+                      >
+                        Custom
+                      </Button>
+                      <Label className="text-sm">Custom Colors</Label>
+                    </div>
+                    
+                    {svgGradient === 'custom' && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Start Color</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={customGradientStart}
+                              onChange={(e) => setCustomGradientStart(e.target.value)}
+                              className="w-8 h-8 rounded border cursor-pointer"
+                            />
+                            <Input
+                              value={customGradientStart}
+                              onChange={(e) => setCustomGradientStart(e.target.value)}
+                              className="text-xs"
+                              placeholder="#a855f7"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">End Color</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={customGradientEnd}
+                              onChange={(e) => setCustomGradientEnd(e.target.value)}
+                              className="w-8 h-8 rounded border cursor-pointer"
+                            />
+                            <Input
+                              value={customGradientEnd}
+                              onChange={(e) => setCustomGradientEnd(e.target.value)}
+                              className="text-xs"
+                              placeholder="#6b21a8"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -313,6 +408,8 @@ const Index = () => {
                     uploadedSvg={uploadedSvg}
                     uploadedLogo={uploadedLogo}
                     svgGradient={svgGradient}
+                    customGradientStart={customGradientStart}
+                    customGradientEnd={customGradientEnd}
                   />
                 </div>
               </div>

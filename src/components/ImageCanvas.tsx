@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState, useCallback } from 'react';
 
 interface ImageCanvasProps {
@@ -9,6 +8,8 @@ interface ImageCanvasProps {
   uploadedSvg: string | null;
   uploadedLogo: string | null;
   svgGradient: string;
+  customGradientStart?: string;
+  customGradientEnd?: string;
 }
 
 interface ImageTransform {
@@ -18,7 +19,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient, customGradientStart = '#a855f7', customGradientEnd = '#6b21a8' }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -50,17 +51,87 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     };
 
     const getImageBounds = () => {
-      // Image positioned from middle to 100px from bottom, avoiding CTA area
+      // Image positioned 167px from bottom (1600 - 167 = 1433)
       return {
         x: 130, // Center 640px width: (900 - 640) / 2 = 130
-        y: 650, // Start from middle-ish area
+        y: 1433 - 800, // Start 800px height upward from 1433px (167px from bottom)
         width: 640, // Fixed width as requested
-        height: 832 // Fixed height as requested (1600 - 650 - 100 - 18 for some padding)
+        height: 800 // Reduced height to fit with new positioning
       };
+    };
+
+    const createMeshGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, type: string) => {
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
+      
+      switch (type) {
+        case 'mesh-rainbow':
+          // Create multiple radial gradients for mesh effect
+          const gradient1 = ctx.createRadialGradient(x + width * 0.3, y + height * 0.3, 0, x + width * 0.3, y + height * 0.3, width * 0.5);
+          gradient1.addColorStop(0, '#ff6b6b');
+          gradient1.addColorStop(0.5, '#4ecdc4');
+          gradient1.addColorStop(1, 'transparent');
+          
+          const gradient2 = ctx.createRadialGradient(x + width * 0.7, y + height * 0.7, 0, x + width * 0.7, y + height * 0.7, width * 0.5);
+          gradient2.addColorStop(0, '#45b7d1');
+          gradient2.addColorStop(0.5, '#f9ca24');
+          gradient2.addColorStop(1, 'transparent');
+          
+          // Apply gradients with blend modes
+          ctx.save();
+          ctx.fillStyle = gradient1;
+          ctx.fillRect(x, y, width, height);
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = gradient2;
+          ctx.fillRect(x, y, width, height);
+          ctx.restore();
+          return null; // Already applied
+          
+        case 'mesh-sunset':
+          const sunsetGradient = ctx.createRadialGradient(centerX, y + height * 0.2, 0, centerX, centerY, width * 0.8);
+          sunsetGradient.addColorStop(0, '#ff9a56');
+          sunsetGradient.addColorStop(0.3, '#ff6b9d');
+          sunsetGradient.addColorStop(0.6, '#c44569');
+          sunsetGradient.addColorStop(1, '#2d1b69');
+          return sunsetGradient;
+          
+        case 'mesh-ocean':
+          const oceanGradient = ctx.createRadialGradient(x + width * 0.2, y + height * 0.8, 0, centerX, centerY, width);
+          oceanGradient.addColorStop(0, '#667eea');
+          oceanGradient.addColorStop(0.4, '#764ba2');
+          oceanGradient.addColorStop(0.7, '#f093fb');
+          oceanGradient.addColorStop(1, '#f5576c');
+          return oceanGradient;
+          
+        case 'mesh-aurora':
+          const auroraGradient = ctx.createLinearGradient(x, y, x + width, y + height);
+          auroraGradient.addColorStop(0, '#00c6ff');
+          auroraGradient.addColorStop(0.25, '#0072ff');
+          auroraGradient.addColorStop(0.5, '#fc00ff');
+          auroraGradient.addColorStop(0.75, '#00dbde');
+          auroraGradient.addColorStop(1, '#fc00ff');
+          return auroraGradient;
+          
+        default:
+          return null;
+      }
     };
 
     const applySvgGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
       let gradient;
+      
+      // Check for mesh gradients first
+      if (svgGradient.startsWith('mesh-')) {
+        return createMeshGradient(ctx, x, y, width, height, svgGradient);
+      }
+      
+      // Check for custom gradient
+      if (svgGradient === 'custom') {
+        gradient = ctx.createLinearGradient(x, y, x, y + height);
+        gradient.addColorStop(0, customGradientStart);
+        gradient.addColorStop(1, customGradientEnd);
+        return gradient;
+      }
       
       switch (svgGradient) {
         case 'purple':
@@ -208,7 +279,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
-      // Draw blurred background image covering entire frame with reduced scaling
+      // Draw blurred background image covering entire frame with minimal scaling
       if (uploadedImage) {
         try {
           const bgImg = new Image();
@@ -220,7 +291,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             bgImg.src = uploadedImage;
           });
 
-          // Calculate dimensions to avoid white edges with reduced scaling
+          // Calculate dimensions with minimal scaling to avoid white edges
           const canvasAspect = 900 / 1600;
           const imageAspect = bgImg.width / bgImg.height;
           
@@ -240,8 +311,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             drawY = -(drawHeight - 1600) / 2;
           }
 
-          // Reduced scale to minimize white edges (was 1.1, now 1.05)
-          const scale = 1.05;
+          // Minimal scale to just cover canvas (was 1.05, now 1.02)
+          const scale = 1.02;
           drawWidth *= scale;
           drawHeight *= scale;
           drawX -= (drawWidth - 900) / 2;
@@ -342,29 +413,49 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           const tempCtx = tempCanvas.getContext('2d');
           
           if (tempCtx) {
-            // Fill with gradient
-            tempCtx.fillStyle = applySvgGradient(tempCtx, 0, 0, svgWidth, svgHeight);
-            tempCtx.fillRect(0, 0, svgWidth, svgHeight);
-            
-            // Apply SVG as mask
-            tempCtx.globalCompositeOperation = 'destination-in';
-            tempCtx.drawImage(svgImg, 0, 0, svgWidth, svgHeight);
-            
-            // Draw the result to main canvas
-            ctx.drawImage(tempCanvas, svgX, svgY);
+            // Handle mesh gradients differently
+            if (svgGradient.startsWith('mesh-')) {
+              const meshResult = applySvgGradient(tempCtx, 0, 0, svgWidth, svgHeight);
+              if (!meshResult) {
+                // Mesh gradient was already applied
+                tempCtx.globalCompositeOperation = 'destination-in';
+                tempCtx.drawImage(svgImg, 0, 0, svgWidth, svgHeight);
+                ctx.drawImage(tempCanvas, svgX, svgY);
+              }
+            } else {
+              // Regular gradient
+              const gradientFill = applySvgGradient(tempCtx, 0, 0, svgWidth, svgHeight);
+              if (gradientFill) {
+                tempCtx.fillStyle = gradientFill;
+                tempCtx.fillRect(0, 0, svgWidth, svgHeight);
+                
+                // Apply SVG as mask
+                tempCtx.globalCompositeOperation = 'destination-in';
+                tempCtx.drawImage(svgImg, 0, 0, svgWidth, svgHeight);
+                
+                // Draw the result to main canvas
+                ctx.drawImage(tempCanvas, svgX, svgY);
+              }
+            }
           }
         } catch (error) {
           console.error('Error loading SVG:', error);
           // Fallback to gradient with rounded rect
-          ctx.fillStyle = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
-          drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
-          ctx.fill();
+          const fallbackGradient = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
+          if (fallbackGradient) {
+            ctx.fillStyle = fallbackGradient;
+            drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
+            ctx.fill();
+          }
         }
       } else {
         // Default gradient background
-        ctx.fillStyle = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
-        drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
-        ctx.fill();
+        const defaultGradient = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
+        if (defaultGradient) {
+          ctx.fillStyle = defaultGradient;
+          drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
+          ctx.fill();
+        }
       }
 
       // Draw logo
@@ -472,7 +563,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       
       // Draw the card
       drawCard(ctx);
-    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient]);
+    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, customGradientStart, customGradientEnd]);
 
     return (
       <canvas
