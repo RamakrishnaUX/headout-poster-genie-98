@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState, useCallback } from 'react';
 
 interface ImageCanvasProps {
@@ -65,27 +66,68 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         case 'purple':
           gradient = ctx.createLinearGradient(x, y, x, y + height);
           gradient.addColorStop(0, '#a855f7');
-          gradient.addColorStop(1, '#7c3aed');
+          gradient.addColorStop(0.5, '#7c3aed');
+          gradient.addColorStop(1, '#6b21a8');
           break;
         case 'blue':
           gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#3b82f6');
+          gradient.addColorStop(0, '#60a5fa');
+          gradient.addColorStop(0.5, '#3b82f6');
           gradient.addColorStop(1, '#1d4ed8');
           break;
         case 'green':
           gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#10b981');
-          gradient.addColorStop(1, '#059669');
+          gradient.addColorStop(0, '#34d399');
+          gradient.addColorStop(0.5, '#10b981');
+          gradient.addColorStop(1, '#047857');
           break;
         case 'orange':
           gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#fb923c');
+          gradient.addColorStop(0.5, '#f97316');
+          gradient.addColorStop(1, '#c2410c');
+          break;
+        case 'pink':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#f472b6');
+          gradient.addColorStop(0.5, '#ec4899');
+          gradient.addColorStop(1, '#be185d');
+          break;
+        case 'teal':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#5eead4');
+          gradient.addColorStop(0.5, '#14b8a6');
+          gradient.addColorStop(1, '#0f766e');
+          break;
+        case 'indigo':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#818cf8');
+          gradient.addColorStop(0.5, '#6366f1');
+          gradient.addColorStop(1, '#4338ca');
+          break;
+        case 'red':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#fb7185');
+          gradient.addColorStop(0.5, '#f43f5e');
+          gradient.addColorStop(1, '#be123c');
+          break;
+        case 'sunset':
+          gradient = ctx.createLinearGradient(x, y, x + width, y + height);
           gradient.addColorStop(0, '#f97316');
-          gradient.addColorStop(1, '#ea580c');
+          gradient.addColorStop(0.5, '#ec4899');
+          gradient.addColorStop(1, '#8b5cf6');
+          break;
+        case 'ocean':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#06b6d4');
+          gradient.addColorStop(0.5, '#3b82f6');
+          gradient.addColorStop(1, '#1e40af');
           break;
         default:
           gradient = ctx.createLinearGradient(x, y, x, y + height);
           gradient.addColorStop(0, '#a855f7');
-          gradient.addColorStop(1, '#7c3aed');
+          gradient.addColorStop(0.5, '#7c3aed');
+          gradient.addColorStop(1, '#6b21a8');
       }
       
       return gradient;
@@ -226,7 +268,57 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillRect(0, 0, 900, 1600);
       }
 
-      // Draw SVG background with padding
+      // Draw main image in designated area BEFORE drawing SVG (so SVG appears on top)
+      if (uploadedImage) {
+        try {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          await new Promise((resolve, reject) => {
+            img.onload = () => {
+              setImageLoaded(img);
+              resolve(null);
+            };
+            img.onerror = reject;
+            img.src = uploadedImage;
+          });
+
+          const bounds = getImageBounds();
+
+          // Create clipping path for image area
+          ctx.save();
+          ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+          ctx.clip();
+
+          // Calculate image dimensions with transform
+          const imgAspectRatio = img.width / img.height;
+          const containerAspectRatio = bounds.width / bounds.height;
+          
+          let baseWidth, baseHeight;
+          
+          if (imgAspectRatio > containerAspectRatio) {
+            baseHeight = bounds.height;
+            baseWidth = baseHeight * imgAspectRatio;
+          } else {
+            baseWidth = bounds.width;
+            baseHeight = baseWidth / imgAspectRatio;
+          }
+
+          // Apply transform
+          const scaledWidth = baseWidth * imageTransform.scale;
+          const scaledHeight = baseHeight * imageTransform.scale;
+          
+          const drawX = bounds.x + (bounds.width - scaledWidth) / 2 + imageTransform.x;
+          const drawY = bounds.y + (bounds.height - scaledHeight) / 2 + imageTransform.y;
+
+          ctx.drawImage(img, drawX, drawY, scaledWidth, scaledHeight);
+          ctx.restore();
+        } catch (error) {
+          console.error('Error drawing main image:', error);
+        }
+      }
+
+      // Draw SVG background with padding (AFTER the main image so it appears on top)
       const svgX = 75;
       const svgY = 100;
       const svgWidth = 750; // 900 - 150 (75px padding on each side)
@@ -340,72 +432,23 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 58);
 
-      // Draw main image in designated area (100px from bottom, above CTA)
-      if (uploadedImage) {
-        try {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          
-          await new Promise((resolve, reject) => {
-            img.onload = () => {
-              setImageLoaded(img);
-              resolve(null);
-            };
-            img.onerror = reject;
-            img.src = uploadedImage;
-          });
-
-          const bounds = getImageBounds();
-
-          // Create clipping path for image area
-          ctx.save();
-          ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-          ctx.clip();
-
-          // Calculate image dimensions with transform
-          const imgAspectRatio = img.width / img.height;
-          const containerAspectRatio = bounds.width / bounds.height;
-          
-          let baseWidth, baseHeight;
-          
-          if (imgAspectRatio > containerAspectRatio) {
-            baseHeight = bounds.height;
-            baseWidth = baseHeight * imgAspectRatio;
-          } else {
-            baseWidth = bounds.width;
-            baseHeight = baseWidth / imgAspectRatio;
-          }
-
-          // Apply transform
-          const scaledWidth = baseWidth * imageTransform.scale;
-          const scaledHeight = baseHeight * imageTransform.scale;
-          
-          const drawX = bounds.x + (bounds.width - scaledWidth) / 2 + imageTransform.x;
-          const drawY = bounds.y + (bounds.height - scaledHeight) / 2 + imageTransform.y;
-
-          ctx.drawImage(img, drawX, drawY, scaledWidth, scaledHeight);
-          ctx.restore();
-
-          // Draw resize handle when image is present
-          if (imageLoaded) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.lineWidth = 1;
-            const handleSize = 20;
-            const handleX = bounds.x + bounds.width - handleSize;
-            const handleY = bounds.y + bounds.height - handleSize;
-            
-            ctx.fillRect(handleX, handleY, handleSize, handleSize);
-            ctx.strokeRect(handleX, handleY, handleSize, handleSize);
-            
-            // Draw resize icon
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.fillRect(handleX + 15, handleY + 5, 2, 10);
-            ctx.fillRect(handleX + 5, handleY + 15, 10, 2);
-          }
-        } catch (error) {
-          console.error('Error drawing main image:', error);
-        }
+      // Draw resize handle when image is present
+      if (imageLoaded && uploadedImage) {
+        const bounds = getImageBounds();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.lineWidth = 1;
+        const handleSize = 20;
+        const handleX = bounds.x + bounds.width - handleSize;
+        const handleY = bounds.y + bounds.height - handleSize;
+        
+        ctx.fillRect(handleX, handleY, handleSize, handleSize);
+        ctx.strokeRect(handleX, handleY, handleSize, handleSize);
+        
+        // Draw resize icon
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(handleX + 15, handleY + 5, 2, 10);
+        ctx.fillRect(handleX + 5, handleY + 15, 10, 2);
       }
     };
 
