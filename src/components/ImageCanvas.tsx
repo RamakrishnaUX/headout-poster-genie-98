@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState, useCallback } from 'react';
 
 interface ImageCanvasProps {
@@ -8,6 +7,7 @@ interface ImageCanvasProps {
   uploadedImage: string | null;
   uploadedSvg: string | null;
   uploadedLogo: string | null;
+  svgGradient: string;
 }
 
 interface ImageTransform {
@@ -17,7 +17,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -51,11 +51,44 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     const getImageBounds = () => {
       // Image positioned from middle to 100px from bottom, avoiding CTA area
       return {
-        x: 0,
+        x: 130, // Center 640px width: (900 - 640) / 2 = 130
         y: 650, // Start from middle-ish area
-        width: 900,
-        height: 850 // 1600 - 650 - 100 (bottom padding)
+        width: 640, // Fixed width as requested
+        height: 832 // Fixed height as requested (1600 - 650 - 100 - 18 for some padding)
       };
+    };
+
+    const applySvgGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
+      let gradient;
+      
+      switch (svgGradient) {
+        case 'purple':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#a855f7');
+          gradient.addColorStop(1, '#7c3aed');
+          break;
+        case 'blue':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#3b82f6');
+          gradient.addColorStop(1, '#1d4ed8');
+          break;
+        case 'green':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#10b981');
+          gradient.addColorStop(1, '#059669');
+          break;
+        case 'orange':
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#f97316');
+          gradient.addColorStop(1, '#ea580c');
+          break;
+        default:
+          gradient = ctx.createLinearGradient(x, y, x, y + height);
+          gradient.addColorStop(0, '#a855f7');
+          gradient.addColorStop(1, '#7c3aed');
+      }
+      
+      return gradient;
     };
 
     const handleMouseDown = useCallback((event: React.MouseEvent) => {
@@ -133,7 +166,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
-      // Draw blurred background image covering entire frame with better cropping
+      // Draw blurred background image covering entire frame with reduced scaling
       if (uploadedImage) {
         try {
           const bgImg = new Image();
@@ -145,7 +178,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             bgImg.src = uploadedImage;
           });
 
-          // Calculate dimensions to avoid white edges
+          // Calculate dimensions to avoid white edges with reduced scaling
           const canvasAspect = 900 / 1600;
           const imageAspect = bgImg.width / bgImg.height;
           
@@ -165,8 +198,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             drawY = -(drawHeight - 1600) / 2;
           }
 
-          // Scale up slightly to ensure no white edges
-          const scale = 1.1;
+          // Reduced scale to minimize white edges (was 1.1, now 1.05)
+          const scale = 1.05;
           drawWidth *= scale;
           drawHeight *= scale;
           drawX -= (drawWidth - 900) / 2;
@@ -210,23 +243,34 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             svgImg.src = uploadedSvg;
           });
 
-          ctx.drawImage(svgImg, svgX, svgY, svgWidth, svgHeight);
+          // Create a temporary canvas to apply gradient to SVG
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = svgWidth;
+          tempCanvas.height = svgHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          if (tempCtx) {
+            // Fill with gradient
+            tempCtx.fillStyle = applySvgGradient(tempCtx, 0, 0, svgWidth, svgHeight);
+            tempCtx.fillRect(0, 0, svgWidth, svgHeight);
+            
+            // Apply SVG as mask
+            tempCtx.globalCompositeOperation = 'destination-in';
+            tempCtx.drawImage(svgImg, 0, 0, svgWidth, svgHeight);
+            
+            // Draw the result to main canvas
+            ctx.drawImage(tempCanvas, svgX, svgY);
+          }
         } catch (error) {
           console.error('Error loading SVG:', error);
-          // Fallback to purple gradient
-          const purpleGradient = ctx.createLinearGradient(svgX, svgY, svgX, svgY + svgHeight);
-          purpleGradient.addColorStop(0, '#a855f7');
-          purpleGradient.addColorStop(1, '#7c3aed');
-          ctx.fillStyle = purpleGradient;
+          // Fallback to gradient with rounded rect
+          ctx.fillStyle = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
           drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
           ctx.fill();
         }
       } else {
-        // Default purple gradient
-        const purpleGradient = ctx.createLinearGradient(svgX, svgY, svgX, svgY + svgHeight);
-        purpleGradient.addColorStop(0, '#a855f7');
-        purpleGradient.addColorStop(1, '#7c3aed');
-        ctx.fillStyle = purpleGradient;
+        // Default gradient background
+        ctx.fillStyle = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
         drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
         ctx.fill();
       }
@@ -385,7 +429,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       
       // Draw the card
       drawCard(ctx);
-    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform]);
+    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient]);
 
     return (
       <canvas
