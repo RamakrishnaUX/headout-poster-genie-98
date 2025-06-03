@@ -533,17 +533,18 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       });
 
-      // Draw subtitle with 650px width constraint and 8px spacing from title (34px font size)
+      // Draw subtitle with 650px width constraint and reduced spacing from title (34px font size, 1.4x line height)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       ctx.font = '34px Arial';
       
-      // 8px spacing from title
-      titleY += 8;
+      // Reduced spacing from title (was 8px, now -4px = 8-12)
+      titleY -= 4;
       
-      // Wrap subtitle text to 650px width
+      // Wrap subtitle text to 650px width with 1.4x line height
       const subtitleWords = subtitle.split(' ');
       let currentSubtitleLine = '';
       let testSubtitleLine = '';
+      const subtitleLineHeight = 34 * 1.4; // 1.4x font size = 47.6px
       
       for (let i = 0; i < subtitleWords.length; i++) {
         testSubtitleLine = currentSubtitleLine + subtitleWords[i] + ' ';
@@ -551,7 +552,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         
         if (metrics.width > 650 && currentSubtitleLine !== '') {
           ctx.fillText(currentSubtitleLine.trim(), svgX + 50, titleY);
-          titleY += 40;
+          titleY += subtitleLineHeight;
           currentSubtitleLine = subtitleWords[i] + ' ';
         } else {
           currentSubtitleLine = testSubtitleLine;
@@ -560,23 +561,23 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       
       if (currentSubtitleLine.trim() !== '') {
         ctx.fillText(currentSubtitleLine.trim(), svgX + 50, titleY);
-        titleY += 40;
+        titleY += subtitleLineHeight;
       }
 
-      // Draw CTA button with 16px spacing from subtitle (94px height, 12px border radius, black text, 34px font)
+      // Draw CTA button with reduced spacing from subtitle (94px height, 20px border radius, IBM Plex Sans font)
       const buttonX = svgX + 50;
-      const buttonY = titleY + 16; // 16px spacing from subtitle
+      const buttonY = titleY + 4; // Reduced spacing from subtitle (was 16px, now 4px = 16-12)
       const buttonWidth = 220;
       const buttonHeight = 94;
-      const buttonRadius = 12;
+      const buttonRadius = 20; // Updated from 12px to 20px
 
       ctx.fillStyle = 'white';
       drawRoundedRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text (34px font, black color)
+      // CTA text (34px font, black color, IBM Plex Sans)
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 34px Arial';
+      ctx.font = 'bold 34px "IBM Plex Sans", Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 58);
 
