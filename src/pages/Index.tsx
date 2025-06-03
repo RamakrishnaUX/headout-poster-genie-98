@@ -16,6 +16,7 @@ const Index = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedSvg, setUploadedSvg] = useState<string | null>(null);
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
+  const [svgGradient, setSvgGradient] = useState('purple'); // New state for SVG gradient
   const fileInputRef = useRef<HTMLInputElement>(null);
   const svgInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +169,45 @@ const Index = () => {
                 {uploadedSvg && (
                   <p className="text-sm text-green-600">✓ SVG uploaded successfully</p>
                 )}
+                
+                {/* SVG Gradient Options */}
+                <div className="space-y-2">
+                  <Label>SVG Gradient (when no SVG uploaded)</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setSvgGradient('purple')}
+                      variant={svgGradient === 'purple' ? 'default' : 'outline'}
+                      size="sm"
+                      className="bg-gradient-to-r from-purple-500 to-purple-700"
+                    >
+                      Purple
+                    </Button>
+                    <Button
+                      onClick={() => setSvgGradient('blue')}
+                      variant={svgGradient === 'blue' ? 'default' : 'outline'}
+                      size="sm"
+                      className="bg-gradient-to-r from-blue-500 to-blue-700"
+                    >
+                      Blue
+                    </Button>
+                    <Button
+                      onClick={() => setSvgGradient('green')}
+                      variant={svgGradient === 'green' ? 'default' : 'outline'}
+                      size="sm"
+                      className="bg-gradient-to-r from-green-500 to-green-700"
+                    >
+                      Green
+                    </Button>
+                    <Button
+                      onClick={() => setSvgGradient('orange')}
+                      variant={svgGradient === 'orange' ? 'default' : 'outline'}
+                      size="sm"
+                      className="bg-gradient-to-r from-orange-500 to-orange-700"
+                    >
+                      Orange
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -190,7 +230,10 @@ const Index = () => {
                   />
                 </div>
                 {uploadedImage && (
-                  <p className="text-sm text-green-600">✓ Image uploaded successfully</p>
+                  <div className="text-sm space-y-1">
+                    <p className="text-green-600">✓ Image uploaded successfully</p>
+                    <p className="text-gray-600">💡 Drag to move, use bottom-right handle to resize</p>
+                  </div>
                 )}
               </div>
 
@@ -221,6 +264,7 @@ const Index = () => {
                     uploadedImage={uploadedImage}
                     uploadedSvg={uploadedSvg}
                     uploadedLogo={uploadedLogo}
+                    svgGradient={svgGradient}
                   />
                 </div>
               </div>

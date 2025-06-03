@@ -49,12 +49,12 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     };
 
     const getImageBounds = () => {
-      // Image positioned from middle to bottom of frame
+      // Image positioned from middle to 100px from bottom, avoiding CTA area
       return {
         x: 0,
-        y: 800, // Middle of 1600px frame
+        y: 650, // Start from middle-ish area
         width: 900,
-        height: 800
+        height: 850 // 1600 - 650 - 100 (bottom padding)
       };
     };
 
@@ -77,8 +77,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
           mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
         
-        // Check if clicking near corners for resize (20px threshold)
-        const cornerThreshold = 20;
+        // Check if clicking near corners for resize (30px threshold)
+        const cornerThreshold = 30;
         const isNearCorner = 
           (mouseX >= bounds.x + bounds.width - cornerThreshold && mouseY >= bounds.y + bounds.height - cornerThreshold);
         
@@ -89,6 +89,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
         
         setLastMousePos({ x: mouseX, y: mouseY });
+        event.preventDefault();
       }
     }, [uploadedImage, imageLoaded]);
 
@@ -115,14 +116,15 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           y: prev.y + deltaY
         }));
       } else if (isResizing) {
-        const scaleFactor = 1 + (deltaX + deltaY) / 200;
+        const scaleFactor = 1 + (deltaX + deltaY) / 300;
         setImageTransform(prev => ({
           ...prev,
-          scale: Math.max(0.1, Math.min(3, prev.scale * scaleFactor))
+          scale: Math.max(0.1, Math.min(5, prev.scale * scaleFactor))
         }));
       }
 
       setLastMousePos({ x: mouseX, y: mouseY });
+      event.preventDefault();
     }, [isDragging, isResizing, lastMousePos]);
 
     const handleMouseUp = useCallback(() => {
@@ -131,7 +133,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
-      // Draw blurred background image covering entire frame
+      // Draw blurred background image covering entire frame with better cropping
       if (uploadedImage) {
         try {
           const bgImg = new Image();
@@ -143,9 +145,35 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             bgImg.src = uploadedImage;
           });
 
-          // Draw blurred background covering entire canvas
+          // Calculate dimensions to avoid white edges
+          const canvasAspect = 900 / 1600;
+          const imageAspect = bgImg.width / bgImg.height;
+          
+          let drawWidth, drawHeight, drawX, drawY;
+          
+          if (imageAspect > canvasAspect) {
+            // Image is wider, fit to height and crop width
+            drawHeight = 1600;
+            drawWidth = drawHeight * imageAspect;
+            drawX = -(drawWidth - 900) / 2;
+            drawY = 0;
+          } else {
+            // Image is taller, fit to width and crop height
+            drawWidth = 900;
+            drawHeight = drawWidth / imageAspect;
+            drawX = 0;
+            drawY = -(drawHeight - 1600) / 2;
+          }
+
+          // Scale up slightly to ensure no white edges
+          const scale = 1.1;
+          drawWidth *= scale;
+          drawHeight *= scale;
+          drawX -= (drawWidth - 900) / 2;
+          drawY -= (drawHeight - 1600) / 2;
+
           ctx.filter = 'blur(15px) brightness(0.7)';
-          ctx.drawImage(bgImg, 0, 0, 900, 1600);
+          ctx.drawImage(bgImg, drawX, drawY, drawWidth, drawHeight);
           ctx.filter = 'none';
         } catch (error) {
           console.error('Error loading background image:', error);
@@ -165,7 +193,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillRect(0, 0, 900, 1600);
       }
 
-      // Draw SVG background if uploaded, otherwise use default purple
+      // Draw SVG background with padding
       const svgX = 75;
       const svgY = 100;
       const svgWidth = 750; // 900 - 150 (75px padding on each side)
@@ -268,7 +296,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 58);
 
-      // Draw main image in lower half
+      // Draw main image in designated area (100px from bottom, above CTA)
       if (uploadedImage) {
         try {
           const img = new Image();
@@ -316,8 +344,20 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
           // Draw resize handle when image is present
           if (imageLoaded) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fillRect(bounds.x + bounds.width - 15, bounds.y + bounds.height - 15, 10, 10);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = 1;
+            const handleSize = 20;
+            const handleX = bounds.x + bounds.width - handleSize;
+            const handleY = bounds.y + bounds.height - handleSize;
+            
+            ctx.fillRect(handleX, handleY, handleSize, handleSize);
+            ctx.strokeRect(handleX, handleY, handleSize, handleSize);
+            
+            // Draw resize icon
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(handleX + 15, handleY + 5, 2, 10);
+            ctx.fillRect(handleX + 5, handleY + 15, 10, 2);
           }
         } catch (error) {
           console.error('Error drawing main image:', error);
@@ -352,7 +392,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ref={canvasRef}
         width={900}
         height={1600}
-        className="border border-gray-200 rounded-lg shadow-lg max-w-full h-auto cursor-pointer"
+        className="border border-gray-200 rounded-lg shadow-lg max-w-full h-auto cursor-pointer select-none"
         style={{ maxWidth: '450px', height: 'auto' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
