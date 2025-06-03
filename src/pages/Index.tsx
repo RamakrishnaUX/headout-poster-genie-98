@@ -14,7 +14,11 @@ const Index = () => {
   const [subtitle, setSubtitle] = useState('Caribe Aquatic Park from €29!');
   const [ctaText, setCtaText] = useState('Book now');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedSvg, setUploadedSvg] = useState<string | null>(null);
+  const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const svgInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
@@ -24,6 +28,28 @@ const Index = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSvgUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadedSvg(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadedLogo(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -97,6 +123,54 @@ const Index = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="logo">Upload Logo</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => logoInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose Logo
+                  </Button>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </div>
+                {uploadedLogo && (
+                  <p className="text-sm text-green-600">✓ Logo uploaded successfully</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="svg">Upload SVG Background</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => svgInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose SVG
+                  </Button>
+                  <input
+                    ref={svgInputRef}
+                    type="file"
+                    accept=".svg,image/svg+xml"
+                    onChange={handleSvgUpload}
+                    className="hidden"
+                  />
+                </div>
+                {uploadedSvg && (
+                  <p className="text-sm text-green-600">✓ SVG uploaded successfully</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="image">Upload Image</Label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -145,6 +219,8 @@ const Index = () => {
                     subtitle={subtitle}
                     ctaText={ctaText}
                     uploadedImage={uploadedImage}
+                    uploadedSvg={uploadedSvg}
+                    uploadedLogo={uploadedLogo}
                   />
                 </div>
               </div>

@@ -6,6 +6,8 @@ interface ImageCanvasProps {
   subtitle: string;
   ctaText: string;
   uploadedImage: string | null;
+  uploadedSvg: string | null;
+  uploadedLogo: string | null;
 }
 
 interface ImageTransform {
@@ -15,7 +17,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -47,17 +49,12 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     };
 
     const getImageBounds = () => {
-      const cardX = 70;
-      const cardY = 90;
-      const cardWidth = 760;
-      const cardHeight = 1420;
-      const buttonY = cardY + 180 + (title.split('\n').length * 65) + 20 + 80;
-      
+      // Image positioned from middle to bottom of frame
       return {
-        x: cardX + 30,
-        y: buttonY + 120,
-        width: cardWidth - 60,
-        height: cardHeight - (buttonY + 120 - cardY) - 30
+        x: 0,
+        y: 800, // Middle of 1600px frame
+        width: 900,
+        height: 800
       };
     };
 
@@ -93,7 +90,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         
         setLastMousePos({ x: mouseX, y: mouseY });
       }
-    }, [uploadedImage, imageLoaded, title]);
+    }, [uploadedImage, imageLoaded]);
 
     const handleMouseMove = useCallback((event: React.MouseEvent) => {
       if (!isDragging && !isResizing) return;
@@ -134,24 +131,24 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
-      // Create gradient background (blurred image or default)
+      // Draw blurred background image covering entire frame
       if (uploadedImage) {
         try {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
+          const bgImg = new Image();
+          bgImg.crossOrigin = 'anonymous';
           
           await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-            img.src = uploadedImage;
+            bgImg.onload = resolve;
+            bgImg.onerror = reject;
+            bgImg.src = uploadedImage;
           });
 
-          // Draw blurred background
+          // Draw blurred background covering entire canvas
           ctx.filter = 'blur(15px) brightness(0.7)';
-          ctx.drawImage(img, 0, 0, 900, 1600);
+          ctx.drawImage(bgImg, 0, 0, 900, 1600);
           ctx.filter = 'none';
         } catch (error) {
-          console.error('Error loading image:', error);
+          console.error('Error loading background image:', error);
           // Fallback to gradient background
           const gradient = ctx.createLinearGradient(0, 0, 900, 1600);
           gradient.addColorStop(0, '#60a5fa');
@@ -168,63 +165,110 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillRect(0, 0, 900, 1600);
       }
 
-      // Draw main purple card
-      const cardX = 70;
-      const cardY = 90;
-      const cardWidth = 760;
-      const cardHeight = 1420;
-      const cardRadius = 40;
+      // Draw SVG background if uploaded, otherwise use default purple
+      const svgX = 75;
+      const svgY = 100;
+      const svgWidth = 750; // 900 - 150 (75px padding on each side)
+      const svgHeight = 1400; // 1600 - 200 (100px padding top/bottom)
 
-      // Purple gradient for the card
-      const purpleGradient = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardHeight);
-      purpleGradient.addColorStop(0, '#a855f7');
-      purpleGradient.addColorStop(1, '#7c3aed');
+      if (uploadedSvg) {
+        try {
+          const svgImg = new Image();
+          svgImg.crossOrigin = 'anonymous';
+          
+          await new Promise((resolve, reject) => {
+            svgImg.onload = resolve;
+            svgImg.onerror = reject;
+            svgImg.src = uploadedSvg;
+          });
 
-      ctx.fillStyle = purpleGradient;
-      drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
-      ctx.fill();
+          ctx.drawImage(svgImg, svgX, svgY, svgWidth, svgHeight);
+        } catch (error) {
+          console.error('Error loading SVG:', error);
+          // Fallback to purple gradient
+          const purpleGradient = ctx.createLinearGradient(svgX, svgY, svgX, svgY + svgHeight);
+          purpleGradient.addColorStop(0, '#a855f7');
+          purpleGradient.addColorStop(1, '#7c3aed');
+          ctx.fillStyle = purpleGradient;
+          drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
+          ctx.fill();
+        }
+      } else {
+        // Default purple gradient
+        const purpleGradient = ctx.createLinearGradient(svgX, svgY, svgX, svgY + svgHeight);
+        purpleGradient.addColorStop(0, '#a855f7');
+        purpleGradient.addColorStop(1, '#7c3aed');
+        ctx.fillStyle = purpleGradient;
+        drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
+        ctx.fill();
+      }
 
-      // Draw Headout logo placeholder (white text for now)
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 36px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('🏊 headout', cardX + 50, cardY + 80);
+      // Draw logo
+      if (uploadedLogo) {
+        try {
+          const logoImg = new Image();
+          logoImg.crossOrigin = 'anonymous';
+          
+          await new Promise((resolve, reject) => {
+            logoImg.onload = resolve;
+            logoImg.onerror = reject;
+            logoImg.src = uploadedLogo;
+          });
 
-      // Draw title
+          // Logo: 220px width, positioned with 48px top padding
+          const logoHeight = (logoImg.height / logoImg.width) * 220;
+          ctx.drawImage(logoImg, svgX + 50, svgY + 48, 220, logoHeight);
+        } catch (error) {
+          console.error('Error loading logo:', error);
+          // Fallback to text logo
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 36px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText('🏊 headout', svgX + 50, svgY + 80);
+        }
+      } else {
+        // Default text logo
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('🏊 headout', svgX + 50, svgY + 80);
+      }
+
+      // Draw title (54px font size)
       ctx.fillStyle = 'white';
       ctx.font = 'bold 54px Arial';
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
-      let titleY = cardY + 180;
+      let titleY = svgY + 180;
       titleLines.forEach((line) => {
-        ctx.fillText(line, cardX + 50, titleY);
+        ctx.fillText(line, svgX + 50, titleY);
         titleY += 65;
       });
 
-      // Draw subtitle
+      // Draw subtitle (34px font size)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = '32px Arial';
-      ctx.fillText(subtitle, cardX + 50, titleY + 20);
+      ctx.font = '34px Arial';
+      ctx.fillText(subtitle, svgX + 50, titleY + 20);
 
-      // Draw CTA button
-      const buttonX = cardX + 50;
+      // Draw CTA button (94px height, 12px border radius, black text, 34px font)
+      const buttonX = svgX + 50;
       const buttonY = titleY + 80;
       const buttonWidth = 220;
-      const buttonHeight = 60;
-      const buttonRadius = 30;
+      const buttonHeight = 94;
+      const buttonRadius = 12;
 
       ctx.fillStyle = 'white';
       drawRoundedRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text
-      ctx.fillStyle = '#374151';
-      ctx.font = 'bold 24px Arial';
+      // CTA text (34px font, black color)
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 34px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 38);
+      ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 58);
 
-      // Draw image container with rounded corners
+      // Draw main image in lower half
       if (uploadedImage) {
         try {
           const img = new Image();
@@ -240,11 +284,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           });
 
           const bounds = getImageBounds();
-          const imageRadius = 30;
 
-          // Create clipping path for rounded image
+          // Create clipping path for image area
           ctx.save();
-          drawRoundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, imageRadius);
+          ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
           ctx.clip();
 
           // Calculate image dimensions with transform
@@ -278,28 +321,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           }
         } catch (error) {
           console.error('Error drawing main image:', error);
-          // Draw placeholder
-          const bounds = getImageBounds();
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-          drawRoundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 30);
-          ctx.fill();
-          
-          ctx.fillStyle = 'white';
-          ctx.font = '24px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Upload an image', bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
         }
-      } else {
-        // Draw placeholder for image
-        const bounds = getImageBounds();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        drawRoundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 30);
-        ctx.fill();
-        
-        ctx.fillStyle = 'white';
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Upload an image', bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
       }
     };
 
@@ -323,7 +345,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       
       // Draw the card
       drawCard(ctx);
-    }, [title, subtitle, ctaText, uploadedImage, imageTransform]);
+    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform]);
 
     return (
       <canvas
