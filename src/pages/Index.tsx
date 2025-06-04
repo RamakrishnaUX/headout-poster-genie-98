@@ -8,6 +8,7 @@ import { Upload, Download, Plus, Minus, Archive } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageCanvas from '@/components/ImageCanvas';
 import { useToast } from '@/hooks/use-toast';
+import JSZip from 'jszip';
 
 const Index = () => {
   const [title, setTitle] = useState('16 Water Attractions\nOne Epic Splash Day.');
@@ -109,38 +110,58 @@ const Index = () => {
   };
 
   const handleBulkDownload = async () => {
-    const formats = ['900x1600', '1200x1200', '1200x628'] as const;
-    const canvases = [canvasRef900x1600, canvasRef1200x1200, canvasRef1200x628];
-    
-    // Create a zip-like structure using JSZip functionality (we'll simulate it)
-    const files: Array<{ name: string; data: string }> = [];
-    
-    formats.forEach((format, index) => {
-      const canvas = canvases[index].current;
-      if (canvas) {
-        const quality = downloadFormat === 'jpeg' ? 0.95 : undefined;
-        const dataUrl = canvas.toDataURL(`image/${downloadFormat}`, quality);
-        files.push({
-          name: `promotional-image-${format}.${downloadFormat}`,
-          data: dataUrl
+    const zip = new JSZip();
+    const formats: Array<'900x1600' | '1200x1200' | '1200x628'> = ['900x1600', '1200x1200', '1200x628'];
+    const canvasRefs = {
+      '900x1600': canvasRef900x1600,
+      '1200x1200': canvasRef1200x1200,
+      '1200x628': canvasRef1200x628
+    };
+
+    try {
+      // Create a folder in the zip for the images
+      const imagesFolder = zip.folder("headout-posters");
+      if (!imagesFolder) throw new Error("Could not create zip folder");
+
+      // Add each format to the zip
+      for (const format of formats) {
+        const canvas = canvasRefs[format].current;
+        if (!canvas) continue;
+
+        // Convert canvas to blob
+        const blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+          }, `image/${downloadFormat}`, downloadFormat === 'jpeg' ? 0.9 : undefined);
         });
+
+        // Add to zip
+        imagesFolder.file(`headout-poster-${format}.${downloadFormat}`, blob);
       }
-    });
 
-    // Download each file individually (simulating bulk download)
-    files.forEach((file, index) => {
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.download = file.name;
-        link.href = file.data;
-        link.click();
-      }, index * 100); // Small delay between downloads
-    });
+      // Generate and download zip
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `headout-posters.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-    toast({
-      title: "Bulk Download Started",
-      description: `Downloading all 3 promotional images in ${downloadFormat.toUpperCase()} format!`,
-    });
+      toast({
+        title: "Success!",
+        description: "All formats have been downloaded as a ZIP file.",
+      });
+    } catch (error) {
+      console.error('Error creating zip file:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create ZIP file. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const addGradientColor = () => {

@@ -59,15 +59,15 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           };
         case '1200x1200':
           return {
-            svgPadding: { x: 73, y: 50, width: 1054, height: 1027 },
-            logoPos: { x: 126, y: 50 + 52, width: 220 },
-            titlePos: { x: 126, y: height - 138 - 80 },
+            svgPadding: { x: 49, y: 26, width: 1054, height: 1027 },
+            logoPos: { x: 102, y: 50 + 28, width: 220 },
+            titlePos: { x: 102, y: height - 138 - 80 },
             titleFontSize: 54,
             subtitleFontSize: 34,
             ctaFontSize: 34,
             ctaHeight: 94,
-            ctaPos: { x: width - 126 - 220, y: height - 144 - 94 },
-            imageArea: { x: (width - 970) / 2, y: 120, width: 970, height: 764 },
+            ctaPos: { x: width - 102 - 220, y: height - 144 - 94 },
+            imageArea: { x: (width - 970) / 2, y: 96, width: 970, height: 764 },
             textMaxWidth: 650,
             ctaWidth: 220
           };
