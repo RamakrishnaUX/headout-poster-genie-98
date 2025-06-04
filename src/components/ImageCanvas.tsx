@@ -48,28 +48,53 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             svgPadding: { x: 75, y: 100, width: 750, height: 1400 },
             logoPos: { x: 50, y: 48, width: 220 },
             titlePos: { x: 50, y: 180 },
-            imageArea: { x: 130, y: 597, width: 640, height: 836 }
+            titleFontSize: 54,
+            subtitleFontSize: 34,
+            ctaFontSize: 34,
+            ctaHeight: 94,
+            imageArea: { x: 130, y: 597, width: 640, height: 836 },
+            textMaxWidth: 650,
+            ctaWidth: 220
           };
         case '1200x1200':
           return {
             svgPadding: { x: 50, y: 50, width: 1100, height: 1100 },
-            logoPos: { x: 50, y: 50, width: 220 },
-            titlePos: { x: 650, y: 200 },
-            imageArea: { x: 650, y: 350, width: 500, height: 700 }
+            logoPos: { x: 126, y: height - 144 - 220, width: 220 }, // 126px from left, 144px from bottom
+            titlePos: { x: 126, y: height - 144 - 150 }, // 126px from left, positioned above logo
+            titleFontSize: 54,
+            subtitleFontSize: 34,
+            ctaFontSize: 34,
+            ctaHeight: 94,
+            ctaPos: { x: width - 126 - 220, y: height - 144 - 94 }, // 126px from right, 144px from bottom
+            imageArea: { x: (width - 928) / 2, y: height - 342 - 700, width: 928, height: 700 }, // centered horizontally, 342px from bottom
+            textMaxWidth: 650,
+            ctaWidth: 220
           };
         case '1200x628':
           return {
             svgPadding: { x: 50, y: 50, width: 1100, height: 528 },
             logoPos: { x: 50, y: 50, width: 220 },
             titlePos: { x: 50, y: 200 },
-            imageArea: { x: 650, y: 100, width: 500, height: 428 }
+            titleFontSize: 44,
+            subtitleFontSize: 28,
+            ctaFontSize: 34,
+            ctaHeight: 76,
+            imageArea: { x: width - 105 - 430, y: 98, width: 430, height: 502 }, // 105px from right, 98px from top
+            textMaxWidth: 450,
+            ctaWidth: 220
           };
         default:
           return {
             svgPadding: { x: 75, y: 100, width: 750, height: 1400 },
             logoPos: { x: 50, y: 48, width: 220 },
             titlePos: { x: 50, y: 180 },
-            imageArea: { x: 130, y: 597, width: 640, height: 836 }
+            titleFontSize: 54,
+            subtitleFontSize: 34,
+            ctaFontSize: 34,
+            ctaHeight: 94,
+            imageArea: { x: 130, y: 597, width: 640, height: 836 },
+            textMaxWidth: 650,
+            ctaWidth: 220
           };
       }
     };
@@ -334,7 +359,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       const { width, height } = getCanvasDimensions();
       const layout = getLayoutConfig();
 
-      // Draw blurred background image covering entire frame with transform applied
       if (uploadedImage) {
         try {
           const bgImg = new Image();
@@ -346,39 +370,33 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             bgImg.src = uploadedImage;
           });
 
-          // Calculate dimensions with minimal scaling to avoid white edges
           const canvasAspect = width / height;
           const imageAspect = bgImg.width / bgImg.height;
           
           let drawWidth, drawHeight, drawX, drawY;
           
           if (imageAspect > canvasAspect) {
-            // Image is wider, fit to height and crop width
             drawHeight = height;
             drawWidth = drawHeight * imageAspect;
             drawX = -(drawWidth - width) / 2;
             drawY = 0;
           } else {
-            // Image is taller, fit to width and crop height
             drawWidth = width;
             drawHeight = drawWidth / imageAspect;
             drawX = 0;
             drawY = -(drawHeight - height) / 2;
           }
 
-          // Minimal scale to just cover canvas
           const scale = 1.02;
           drawWidth *= scale;
           drawHeight *= scale;
           drawX -= (drawWidth - width) / 2;
           drawY -= (drawHeight - height) / 2;
 
-          // Apply transform to background (reduced effect - 20% of main image transform)
           const transformScale = 0.2;
           drawX += imageTransform.x * transformScale;
           drawY += imageTransform.y * transformScale;
           
-          // Apply scale transform
           const scaleOffset = (imageTransform.scale - 1) * transformScale;
           drawWidth *= (1 + scaleOffset);
           drawHeight *= (1 + scaleOffset);
@@ -390,7 +408,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           ctx.filter = 'none';
         } catch (error) {
           console.error('Error loading background image:', error);
-          // Fallback to gradient background
           const gradient = ctx.createLinearGradient(0, 0, width, height);
           gradient.addColorStop(0, '#60a5fa');
           gradient.addColorStop(1, '#3b82f6');
@@ -398,7 +415,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           ctx.fillRect(0, 0, width, height);
         }
       } else {
-        // Default gradient background
         const gradient = ctx.createLinearGradient(0, 0, width, height);
         gradient.addColorStop(0, '#60a5fa');
         gradient.addColorStop(1, '#3b82f6');
@@ -406,7 +422,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillRect(0, 0, width, height);
       }
 
-      // Draw main image in designated area BEFORE drawing SVG (so SVG appears on top)
       if (uploadedImage) {
         try {
           const img = new Image();
@@ -423,12 +438,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
           const bounds = getImageBounds();
 
-          // Create clipping path for image area
           ctx.save();
           ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
           ctx.clip();
 
-          // Calculate image dimensions with transform
           const imgAspectRatio = img.width / img.height;
           const containerAspectRatio = bounds.width / bounds.height;
           
@@ -442,7 +455,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             baseHeight = baseWidth / imgAspectRatio;
           }
 
-          // Apply transform
           const scaledWidth = baseWidth * imageTransform.scale;
           const scaledHeight = baseHeight * imageTransform.scale;
           
@@ -456,7 +468,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       }
 
-      // Draw SVG background with padding (AFTER the main image so it appears on top)
       const { svgPadding } = layout;
 
       if (uploadedSvg) {
@@ -470,41 +481,34 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             svgImg.src = uploadedSvg;
           });
 
-          // Create a temporary canvas to apply gradient to SVG
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = svgPadding.width;
           tempCanvas.height = svgPadding.height;
           const tempCtx = tempCanvas.getContext('2d');
           
           if (tempCtx) {
-            // Handle mesh gradients differently
             if (svgGradient.startsWith('mesh-')) {
               const meshResult = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
               if (!meshResult) {
-                // Mesh gradient was already applied
                 tempCtx.globalCompositeOperation = 'destination-in';
                 tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
                 ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
               }
             } else {
-              // Regular gradient
               const gradientFill = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
               if (gradientFill) {
                 tempCtx.fillStyle = gradientFill;
                 tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
                 
-                // Apply SVG as mask
                 tempCtx.globalCompositeOperation = 'destination-in';
                 tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
                 
-                // Draw the result to main canvas
                 ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
               }
             }
           }
         } catch (error) {
           console.error('Error loading SVG:', error);
-          // Fallback to gradient with rounded rect
           const fallbackGradient = applySvgGradient(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
           if (fallbackGradient) {
             ctx.fillStyle = fallbackGradient;
@@ -513,7 +517,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           }
         }
       } else {
-        // Default gradient background
         const defaultGradient = applySvgGradient(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
         if (defaultGradient) {
           ctx.fillStyle = defaultGradient;
@@ -535,35 +538,48 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             logoImg.src = uploadedLogo;
           });
 
-          // Logo: 220px width, positioned with relative padding
           const logoHeight = (logoImg.height / logoImg.width) * logoPos.width;
-          ctx.drawImage(logoImg, svgPadding.x + logoPos.x, svgPadding.y + logoPos.y, logoPos.width, logoHeight);
+          
+          // For 1200x1200, logo position is absolute, not relative to svgPadding
+          const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
+          const logoY = format === '1200x1200' ? logoPos.y : svgPadding.y + logoPos.y;
+          
+          ctx.drawImage(logoImg, logoX, logoY, logoPos.width, logoHeight);
         } catch (error) {
           console.error('Error loading logo:', error);
-          // Fallback to text logo
           ctx.fillStyle = 'white';
           ctx.font = 'bold 36px Arial';
           ctx.textAlign = 'left';
-          ctx.fillText('🏊 headout', svgPadding.x + logoPos.x, svgPadding.y + logoPos.y + 36);
+          
+          const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
+          const logoY = format === '1200x1200' ? logoPos.y + 36 : svgPadding.y + logoPos.y + 36;
+          
+          ctx.fillText('🏊 headout', logoX, logoY);
         }
       } else {
-        // Default text logo
         ctx.fillStyle = 'white';
         ctx.font = 'bold 36px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('🏊 headout', svgPadding.x + logoPos.x, svgPadding.y + logoPos.y + 36);
+        
+        const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
+        const logoY = format === '1200x1200' ? logoPos.y + 36 : svgPadding.y + logoPos.y + 36;
+        
+        ctx.fillText('🏊 headout', logoX, logoY);
       }
 
-      // Draw title with 650px width constraint (54px font size)
-      const { titlePos } = layout;
+      // Draw title
+      const { titlePos, titleFontSize, textMaxWidth } = layout;
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 54px Arial';
+      ctx.font = `bold ${titleFontSize}px "Lato", Arial, sans-serif`;
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
-      let titleY = svgPadding.y + titlePos.y;
+      
+      // For 1200x1200, title position is absolute, not relative to svgPadding
+      const titleX = format === '1200x1200' ? titlePos.x : svgPadding.x + titlePos.x;
+      let titleY = format === '1200x1200' ? titlePos.y : svgPadding.y + titlePos.y;
+      
       titleLines.forEach((line) => {
-        // Wrap text to 650px width
         const words = line.split(' ');
         let currentLine = '';
         let testLine = '';
@@ -572,9 +588,9 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           testLine = currentLine + words[i] + ' ';
           const metrics = ctx.measureText(testLine);
           
-          if (metrics.width > 650 && currentLine !== '') {
-            ctx.fillText(currentLine.trim(), svgPadding.x + titlePos.x, titleY);
-            titleY += 65;
+          if (metrics.width > textMaxWidth && currentLine !== '') {
+            ctx.fillText(currentLine.trim(), titleX, titleY);
+            titleY += titleFontSize * 1.2;
             currentLine = words[i] + ' ';
           } else {
             currentLine = testLine;
@@ -582,30 +598,29 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
         
         if (currentLine.trim() !== '') {
-          ctx.fillText(currentLine.trim(), svgPadding.x + titlePos.x, titleY);
-          titleY += 65;
+          ctx.fillText(currentLine.trim(), titleX, titleY);
+          titleY += titleFontSize * 1.2;
         }
       });
 
-      // Draw subtitle with 650px width constraint and reduced spacing from title (34px font size, 1.4x line height, Lato font, 400 weight)
+      // Draw subtitle
+      const { subtitleFontSize } = layout;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = '400 34px "Lato", Arial, sans-serif';
+      ctx.font = `400 ${subtitleFontSize}px "Lato", Arial, sans-serif`;
       
-      // Reduced spacing from title (was 8px, now -4px = 8-12)
       titleY -= 4;
       
-      // Wrap subtitle text to 650px width with 1.4x line height
       const subtitleWords = subtitle.split(' ');
       let currentSubtitleLine = '';
       let testSubtitleLine = '';
-      const subtitleLineHeight = 34 * 1.4; // 1.4x font size = 47.6px
+      const subtitleLineHeight = subtitleFontSize * 1.4;
       
       for (let i = 0; i < subtitleWords.length; i++) {
         testSubtitleLine = currentSubtitleLine + subtitleWords[i] + ' ';
         const metrics = ctx.measureText(testSubtitleLine);
         
-        if (metrics.width > 650 && currentSubtitleLine !== '') {
-          ctx.fillText(currentSubtitleLine.trim(), svgPadding.x + titlePos.x, titleY);
+        if (metrics.width > textMaxWidth && currentSubtitleLine !== '') {
+          ctx.fillText(currentSubtitleLine.trim(), titleX, titleY);
           titleY += subtitleLineHeight;
           currentSubtitleLine = subtitleWords[i] + ' ';
         } else {
@@ -614,28 +629,36 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       }
       
       if (currentSubtitleLine.trim() !== '') {
-        ctx.fillText(currentSubtitleLine.trim(), svgPadding.x + titlePos.x, titleY);
+        ctx.fillText(currentSubtitleLine.trim(), titleX, titleY);
         titleY += subtitleLineHeight;
       }
 
-      // Draw CTA button with reduced spacing from subtitle (94px height, 20px border radius, Lato font, 500 weight)
-      const buttonX = svgPadding.x + titlePos.x;
-      const buttonY = titleY - 2; // Reduced spacing from subtitle by 6px (was 4px, now -2px = 4-6)
-      const buttonWidth = 220;
-      const buttonHeight = 94;
+      // Draw CTA button
+      const { ctaHeight, ctaWidth, ctaFontSize } = layout;
+      
+      let buttonX, buttonY;
+      if (format === '1200x1200' && layout.ctaPos) {
+        // For 1200x1200, use absolute positioning
+        buttonX = layout.ctaPos.x;
+        buttonY = layout.ctaPos.y;
+      } else {
+        // For other formats, use relative positioning
+        buttonX = titleX;
+        buttonY = titleY - 2;
+      }
+      
       const buttonRadius = 20;
 
       ctx.fillStyle = 'white';
-      drawRoundedRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, buttonRadius);
+      drawRoundedRect(ctx, buttonX, buttonY, ctaWidth, ctaHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text (34px font, black color, Lato font, 500 weight)
+      // CTA text
       ctx.fillStyle = '#000000';
-      ctx.font = '500 34px "Lato", Arial, sans-serif';
+      ctx.font = `500 ${ctaFontSize}px "Lato", Arial, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 58);
+      ctx.fillText(ctaText, buttonX + ctaWidth / 2, buttonY + ctaHeight / 2 + ctaFontSize / 3);
 
-      // Draw resize handle when image is present
       if (imageLoaded && uploadedImage) {
         const bounds = getImageBounds();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -648,14 +671,12 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillRect(handleX, handleY, handleSize, handleSize);
         ctx.strokeRect(handleX, handleY, handleSize, handleSize);
         
-        // Draw resize icon
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.fillRect(handleX + 15, handleY + 5, 2, 10);
         ctx.fillRect(handleX + 5, handleY + 15, 10, 2);
       }
     };
 
-    // Reset transform when image changes
     useEffect(() => {
       if (uploadedImage) {
         setImageTransform({ x: 0, y: 0, scale: 1 });
@@ -674,10 +695,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Clear canvas
       ctx.clearRect(0, 0, width, height);
       
-      // Draw the card
       drawCard(ctx);
     }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, customGradientStart, customGradientEnd, format]);
 
