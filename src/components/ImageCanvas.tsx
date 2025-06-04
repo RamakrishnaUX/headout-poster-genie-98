@@ -10,6 +10,7 @@ interface ImageCanvasProps {
   svgGradient: string;
   customGradientStart?: string;
   customGradientEnd?: string;
+  format: '900x1600' | '1200x1200' | '1200x628';
 }
 
 interface ImageTransform {
@@ -19,7 +20,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient, customGradientStart = '#a855f7', customGradientEnd = '#6b21a8' }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient, customGradientStart = '#a855f7', customGradientEnd = '#6b21a8', format }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -28,6 +29,50 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     const [imageLoaded, setImageLoaded] = useState<HTMLImageElement | null>(null);
 
     useImperativeHandle(ref, () => canvasRef.current as HTMLCanvasElement);
+
+    const getCanvasDimensions = () => {
+      switch (format) {
+        case '900x1600': return { width: 900, height: 1600 };
+        case '1200x1200': return { width: 1200, height: 1200 };
+        case '1200x628': return { width: 1200, height: 628 };
+        default: return { width: 900, height: 1600 };
+      }
+    };
+
+    const getLayoutConfig = () => {
+      const { width, height } = getCanvasDimensions();
+      
+      switch (format) {
+        case '900x1600':
+          return {
+            svgPadding: { x: 75, y: 100, width: 750, height: 1400 },
+            logoPos: { x: 50, y: 48, width: 220 },
+            titlePos: { x: 50, y: 180 },
+            imageArea: { x: 130, y: 597, width: 640, height: 836 }
+          };
+        case '1200x1200':
+          return {
+            svgPadding: { x: 50, y: 50, width: 1100, height: 1100 },
+            logoPos: { x: 50, y: 50, width: 220 },
+            titlePos: { x: 650, y: 200 },
+            imageArea: { x: 650, y: 350, width: 500, height: 700 }
+          };
+        case '1200x628':
+          return {
+            svgPadding: { x: 50, y: 50, width: 1100, height: 528 },
+            logoPos: { x: 50, y: 50, width: 220 },
+            titlePos: { x: 50, y: 200 },
+            imageArea: { x: 650, y: 100, width: 500, height: 428 }
+          };
+        default:
+          return {
+            svgPadding: { x: 75, y: 100, width: 750, height: 1400 },
+            logoPos: { x: 50, y: 48, width: 220 },
+            titlePos: { x: 50, y: 180 },
+            imageArea: { x: 130, y: 597, width: 640, height: 836 }
+          };
+      }
+    };
 
     const drawRoundedRect = (
       ctx: CanvasRenderingContext2D,
@@ -51,13 +96,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     };
 
     const getImageBounds = () => {
-      // Image positioned 167px from bottom with increased height
-      return {
-        x: 130, // Center 640px width: (900 - 640) / 2 = 130
-        y: 1433 - 836, // Start 836px height upward from 1433px (167px from bottom) - increased by 16px more
-        width: 640, // Fixed width as requested
-        height: 836 // Increased height by 16px more (was 820, now 836)
-      };
+      const layout = getLayoutConfig();
+      return layout.imageArea;
     };
 
     const createMeshGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, type: string) => {
@@ -96,7 +136,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           return sunsetGradient;
           
         case 'mesh-ocean':
-          const oceanGradient = ctx.createRadialGradient(x + width * 0.2, y + height * 0.8, 0, centerX, centerY, width);
+          const oceanGradient = ctx.createRadialGradient(x + width * 0.2, y + width * 0.8, 0, centerX, centerY, width);
           oceanGradient.addColorStop(0, '#667eea');
           oceanGradient.addColorStop(0.4, '#764ba2');
           oceanGradient.addColorStop(0.7, '#f093fb');
@@ -291,6 +331,9 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
+      const { width, height } = getCanvasDimensions();
+      const layout = getLayoutConfig();
+
       // Draw blurred background image covering entire frame with transform applied
       if (uploadedImage) {
         try {
@@ -304,31 +347,31 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           });
 
           // Calculate dimensions with minimal scaling to avoid white edges
-          const canvasAspect = 900 / 1600;
+          const canvasAspect = width / height;
           const imageAspect = bgImg.width / bgImg.height;
           
           let drawWidth, drawHeight, drawX, drawY;
           
           if (imageAspect > canvasAspect) {
             // Image is wider, fit to height and crop width
-            drawHeight = 1600;
+            drawHeight = height;
             drawWidth = drawHeight * imageAspect;
-            drawX = -(drawWidth - 900) / 2;
+            drawX = -(drawWidth - width) / 2;
             drawY = 0;
           } else {
             // Image is taller, fit to width and crop height
-            drawWidth = 900;
+            drawWidth = width;
             drawHeight = drawWidth / imageAspect;
             drawX = 0;
-            drawY = -(drawHeight - 1600) / 2;
+            drawY = -(drawHeight - height) / 2;
           }
 
           // Minimal scale to just cover canvas
           const scale = 1.02;
           drawWidth *= scale;
           drawHeight *= scale;
-          drawX -= (drawWidth - 900) / 2;
-          drawY -= (drawHeight - 1600) / 2;
+          drawX -= (drawWidth - width) / 2;
+          drawY -= (drawHeight - height) / 2;
 
           // Apply transform to background (reduced effect - 20% of main image transform)
           const transformScale = 0.2;
@@ -348,19 +391,19 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         } catch (error) {
           console.error('Error loading background image:', error);
           // Fallback to gradient background
-          const gradient = ctx.createLinearGradient(0, 0, 900, 1600);
+          const gradient = ctx.createLinearGradient(0, 0, width, height);
           gradient.addColorStop(0, '#60a5fa');
           gradient.addColorStop(1, '#3b82f6');
           ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, 900, 1600);
+          ctx.fillRect(0, 0, width, height);
         }
       } else {
         // Default gradient background
-        const gradient = ctx.createLinearGradient(0, 0, 900, 1600);
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
         gradient.addColorStop(0, '#60a5fa');
         gradient.addColorStop(1, '#3b82f6');
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 900, 1600);
+        ctx.fillRect(0, 0, width, height);
       }
 
       // Draw main image in designated area BEFORE drawing SVG (so SVG appears on top)
@@ -414,10 +457,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       }
 
       // Draw SVG background with padding (AFTER the main image so it appears on top)
-      const svgX = 75;
-      const svgY = 100;
-      const svgWidth = 750; // 900 - 150 (75px padding on each side)
-      const svgHeight = 1400; // 1600 - 200 (100px padding top/bottom)
+      const { svgPadding } = layout;
 
       if (uploadedSvg) {
         try {
@@ -432,57 +472,58 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
           // Create a temporary canvas to apply gradient to SVG
           const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = svgWidth;
-          tempCanvas.height = svgHeight;
+          tempCanvas.width = svgPadding.width;
+          tempCanvas.height = svgPadding.height;
           const tempCtx = tempCanvas.getContext('2d');
           
           if (tempCtx) {
             // Handle mesh gradients differently
             if (svgGradient.startsWith('mesh-')) {
-              const meshResult = applySvgGradient(tempCtx, 0, 0, svgWidth, svgHeight);
+              const meshResult = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
               if (!meshResult) {
                 // Mesh gradient was already applied
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(svgImg, 0, 0, svgWidth, svgHeight);
-                ctx.drawImage(tempCanvas, svgX, svgY);
+                tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
+                ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
               }
             } else {
               // Regular gradient
-              const gradientFill = applySvgGradient(tempCtx, 0, 0, svgWidth, svgHeight);
+              const gradientFill = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
               if (gradientFill) {
                 tempCtx.fillStyle = gradientFill;
-                tempCtx.fillRect(0, 0, svgWidth, svgHeight);
+                tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
                 
                 // Apply SVG as mask
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(svgImg, 0, 0, svgWidth, svgHeight);
+                tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
                 
                 // Draw the result to main canvas
-                ctx.drawImage(tempCanvas, svgX, svgY);
+                ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
               }
             }
           }
         } catch (error) {
           console.error('Error loading SVG:', error);
           // Fallback to gradient with rounded rect
-          const fallbackGradient = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
+          const fallbackGradient = applySvgGradient(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
           if (fallbackGradient) {
             ctx.fillStyle = fallbackGradient;
-            drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
+            drawRoundedRect(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height, 40);
             ctx.fill();
           }
         }
       } else {
         // Default gradient background
-        const defaultGradient = applySvgGradient(ctx, svgX, svgY, svgWidth, svgHeight);
+        const defaultGradient = applySvgGradient(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
         if (defaultGradient) {
           ctx.fillStyle = defaultGradient;
-          drawRoundedRect(ctx, svgX, svgY, svgWidth, svgHeight, 40);
+          drawRoundedRect(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height, 40);
           ctx.fill();
         }
       }
 
       // Draw logo
+      const { logoPos } = layout;
       if (uploadedLogo) {
         try {
           const logoImg = new Image();
@@ -494,32 +535,33 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             logoImg.src = uploadedLogo;
           });
 
-          // Logo: 220px width, positioned with 48px top padding
-          const logoHeight = (logoImg.height / logoImg.width) * 220;
-          ctx.drawImage(logoImg, svgX + 50, svgY + 48, 220, logoHeight);
+          // Logo: 220px width, positioned with relative padding
+          const logoHeight = (logoImg.height / logoImg.width) * logoPos.width;
+          ctx.drawImage(logoImg, svgPadding.x + logoPos.x, svgPadding.y + logoPos.y, logoPos.width, logoHeight);
         } catch (error) {
           console.error('Error loading logo:', error);
           // Fallback to text logo
           ctx.fillStyle = 'white';
           ctx.font = 'bold 36px Arial';
           ctx.textAlign = 'left';
-          ctx.fillText('🏊 headout', svgX + 50, svgY + 80);
+          ctx.fillText('🏊 headout', svgPadding.x + logoPos.x, svgPadding.y + logoPos.y + 36);
         }
       } else {
         // Default text logo
         ctx.fillStyle = 'white';
         ctx.font = 'bold 36px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('🏊 headout', svgX + 50, svgY + 80);
+        ctx.fillText('🏊 headout', svgPadding.x + logoPos.x, svgPadding.y + logoPos.y + 36);
       }
 
       // Draw title with 650px width constraint (54px font size)
+      const { titlePos } = layout;
       ctx.fillStyle = 'white';
       ctx.font = 'bold 54px Arial';
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
-      let titleY = svgY + 180;
+      let titleY = svgPadding.y + titlePos.y;
       titleLines.forEach((line) => {
         // Wrap text to 650px width
         const words = line.split(' ');
@@ -531,7 +573,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           const metrics = ctx.measureText(testLine);
           
           if (metrics.width > 650 && currentLine !== '') {
-            ctx.fillText(currentLine.trim(), svgX + 50, titleY);
+            ctx.fillText(currentLine.trim(), svgPadding.x + titlePos.x, titleY);
             titleY += 65;
             currentLine = words[i] + ' ';
           } else {
@@ -540,7 +582,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
         
         if (currentLine.trim() !== '') {
-          ctx.fillText(currentLine.trim(), svgX + 50, titleY);
+          ctx.fillText(currentLine.trim(), svgPadding.x + titlePos.x, titleY);
           titleY += 65;
         }
       });
@@ -563,7 +605,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         const metrics = ctx.measureText(testSubtitleLine);
         
         if (metrics.width > 650 && currentSubtitleLine !== '') {
-          ctx.fillText(currentSubtitleLine.trim(), svgX + 50, titleY);
+          ctx.fillText(currentSubtitleLine.trim(), svgPadding.x + titlePos.x, titleY);
           titleY += subtitleLineHeight;
           currentSubtitleLine = subtitleWords[i] + ' ';
         } else {
@@ -572,12 +614,12 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       }
       
       if (currentSubtitleLine.trim() !== '') {
-        ctx.fillText(currentSubtitleLine.trim(), svgX + 50, titleY);
+        ctx.fillText(currentSubtitleLine.trim(), svgPadding.x + titlePos.x, titleY);
         titleY += subtitleLineHeight;
       }
 
       // Draw CTA button with reduced spacing from subtitle (94px height, 20px border radius, Lato font, 500 weight)
-      const buttonX = svgX + 50;
+      const buttonX = svgPadding.x + titlePos.x;
       const buttonY = titleY - 2; // Reduced spacing from subtitle by 6px (was 4px, now -2px = 4-6)
       const buttonWidth = 220;
       const buttonHeight = 94;
@@ -625,23 +667,34 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      const { width, height } = getCanvasDimensions();
+      canvas.width = width;
+      canvas.height = height;
+
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
       // Clear canvas
-      ctx.clearRect(0, 0, 900, 1600);
+      ctx.clearRect(0, 0, width, height);
       
       // Draw the card
       drawCard(ctx);
-    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, customGradientStart, customGradientEnd]);
+    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, customGradientStart, customGradientEnd, format]);
+
+    const { width, height } = getCanvasDimensions();
+    const maxDisplayWidth = format === '1200x628' ? 600 : 450;
+    const displayHeight = format === '1200x628' ? (height * maxDisplayWidth) / width : 'auto';
 
     return (
       <canvas
         ref={canvasRef}
-        width={900}
-        height={1600}
+        width={width}
+        height={height}
         className="border border-gray-200 rounded-lg shadow-lg max-w-full h-auto cursor-pointer select-none"
-        style={{ maxWidth: '450px', height: 'auto' }}
+        style={{ 
+          maxWidth: `${maxDisplayWidth}px`, 
+          height: displayHeight 
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

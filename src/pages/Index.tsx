@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,16 +14,34 @@ const Index = () => {
   const [subtitle, setSubtitle] = useState('Caribe Aquatic Park from €29!');
   const [ctaText, setCtaText] = useState('Book now');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [uploadedSvg, setUploadedSvg] = useState<string | null>(null);
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<'900x1600' | '1200x1200' | '1200x628'>('900x1600');
+  
+  // Separate SVG uploads for each format
+  const [uploadedSvg900x1600, setUploadedSvg900x1600] = useState<string | null>(null);
+  const [uploadedSvg1200x1200, setUploadedSvg1200x1200] = useState<string | null>(null);
+  const [uploadedSvg1200x628, setUploadedSvg1200x628] = useState<string | null>(null);
+  
   const [svgGradient, setSvgGradient] = useState('purple');
   const [customGradientStart, setCustomGradientStart] = useState('#a855f7');
   const [customGradientEnd, setCustomGradientEnd] = useState('#6b21a8');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const svgInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const svgInputRef900x1600 = useRef<HTMLInputElement>(null);
+  const svgInputRef1200x1200 = useRef<HTMLInputElement>(null);
+  const svgInputRef1200x628 = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+
+  const getCurrentSvg = () => {
+    switch (selectedFormat) {
+      case '900x1600': return uploadedSvg900x1600;
+      case '1200x1200': return uploadedSvg1200x1200;
+      case '1200x628': return uploadedSvg1200x628;
+      default: return uploadedSvg900x1600;
+    }
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -35,12 +54,17 @@ const Index = () => {
     }
   };
 
-  const handleSvgUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSvgUpload = (format: '900x1600' | '1200x1200' | '1200x628') => (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUploadedSvg(e.target?.result as string);
+        const result = e.target?.result as string;
+        switch (format) {
+          case '900x1600': setUploadedSvg900x1600(result); break;
+          case '1200x1200': setUploadedSvg1200x1200(result); break;
+          case '1200x628': setUploadedSvg1200x628(result); break;
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -61,12 +85,12 @@ const Index = () => {
     const canvas = canvasRef.current;
     if (canvas) {
       const link = document.createElement('a');
-      link.download = 'promotional-image.png';
+      link.download = `promotional-image-${selectedFormat}.png`;
       link.href = canvas.toDataURL();
       link.click();
       toast({
         title: "Image Downloaded",
-        description: "Your promotional image has been saved successfully!",
+        description: `Your ${selectedFormat} promotional image has been saved successfully!`,
       });
     }
   };
@@ -93,6 +117,34 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Format Selection */}
+              <div className="space-y-2">
+                <Label>Asset Format</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    onClick={() => setSelectedFormat('900x1600')}
+                    variant={selectedFormat === '900x1600' ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    900×1600
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedFormat('1200x1200')}
+                    variant={selectedFormat === '1200x1200' ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    1200×1200
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedFormat('1200x628')}
+                    variant={selectedFormat === '1200x628' ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    1200×628
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Textarea
@@ -148,27 +200,49 @@ const Index = () => {
                 )}
               </div>
 
+              {/* SVG Background for Current Format */}
               <div className="space-y-2">
-                <Label htmlFor="svg">Upload SVG Background</Label>
+                <Label>Upload SVG Background ({selectedFormat})</Label>
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => svgInputRef.current?.click()}
+                    onClick={() => {
+                      switch (selectedFormat) {
+                        case '900x1600': svgInputRef900x1600.current?.click(); break;
+                        case '1200x1200': svgInputRef1200x1200.current?.click(); break;
+                        case '1200x628': svgInputRef1200x628.current?.click(); break;
+                      }
+                    }}
                     variant="outline"
                     className="w-full"
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Choose SVG
+                    Choose SVG for {selectedFormat}
                   </Button>
+                  
                   <input
-                    ref={svgInputRef}
+                    ref={svgInputRef900x1600}
                     type="file"
                     accept=".svg,image/svg+xml"
-                    onChange={handleSvgUpload}
+                    onChange={handleSvgUpload('900x1600')}
+                    className="hidden"
+                  />
+                  <input
+                    ref={svgInputRef1200x1200}
+                    type="file"
+                    accept=".svg,image/svg+xml"
+                    onChange={handleSvgUpload('1200x1200')}
+                    className="hidden"
+                  />
+                  <input
+                    ref={svgInputRef1200x628}
+                    type="file"
+                    accept=".svg,image/svg+xml"
+                    onChange={handleSvgUpload('1200x628')}
                     className="hidden"
                   />
                 </div>
-                {uploadedSvg && (
-                  <p className="text-sm text-green-600">✓ SVG uploaded successfully</p>
+                {getCurrentSvg() && (
+                  <p className="text-sm text-green-600">✓ SVG uploaded for {selectedFormat}</p>
                 )}
                 
                 {/* SVG Gradient Options */}
@@ -339,7 +413,7 @@ const Index = () => {
                 size="lg"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Download Image
+                Download {selectedFormat} Image
               </Button>
             </CardContent>
           </Card>
@@ -347,7 +421,7 @@ const Index = () => {
           {/* Preview Panel */}
           <Card>
             <CardHeader>
-              <CardTitle>Live Preview</CardTitle>
+              <CardTitle>Live Preview ({selectedFormat})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center">
@@ -358,11 +432,12 @@ const Index = () => {
                     subtitle={subtitle}
                     ctaText={ctaText}
                     uploadedImage={uploadedImage}
-                    uploadedSvg={uploadedSvg}
+                    uploadedSvg={getCurrentSvg()}
                     uploadedLogo={uploadedLogo}
                     svgGradient={svgGradient}
                     customGradientStart={customGradientStart}
                     customGradientEnd={customGradientEnd}
+                    format={selectedFormat}
                   />
                 </div>
               </div>
