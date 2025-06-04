@@ -291,7 +291,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
-      // Draw blurred background image covering entire frame with minimal scaling
+      // Draw blurred background image covering entire frame with transform applied
       if (uploadedImage) {
         try {
           const bgImg = new Image();
@@ -323,12 +323,24 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             drawY = -(drawHeight - 1600) / 2;
           }
 
-          // Minimal scale to just cover canvas (was 1.05, now 1.02)
+          // Minimal scale to just cover canvas
           const scale = 1.02;
           drawWidth *= scale;
           drawHeight *= scale;
           drawX -= (drawWidth - 900) / 2;
           drawY -= (drawHeight - 1600) / 2;
+
+          // Apply transform to background (reduced effect - 20% of main image transform)
+          const transformScale = 0.2;
+          drawX += imageTransform.x * transformScale;
+          drawY += imageTransform.y * transformScale;
+          
+          // Apply scale transform
+          const scaleOffset = (imageTransform.scale - 1) * transformScale;
+          drawWidth *= (1 + scaleOffset);
+          drawHeight *= (1 + scaleOffset);
+          drawX -= (drawWidth * scaleOffset) / 2;
+          drawY -= (drawHeight * scaleOffset) / 2;
 
           ctx.filter = 'blur(15px) brightness(0.7)';
           ctx.drawImage(bgImg, drawX, drawY, drawWidth, drawHeight);
@@ -533,9 +545,9 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       });
 
-      // Draw subtitle with 650px width constraint and reduced spacing from title (34px font size, 1.4x line height)
+      // Draw subtitle with 650px width constraint and reduced spacing from title (34px font size, 1.4x line height, Lato font, 400 weight)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = '34px Arial';
+      ctx.font = '400 34px "Lato", Arial, sans-serif';
       
       // Reduced spacing from title (was 8px, now -4px = 8-12)
       titleY -= 4;
@@ -564,20 +576,20 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         titleY += subtitleLineHeight;
       }
 
-      // Draw CTA button with reduced spacing from subtitle (94px height, 20px border radius, IBM Plex Sans font)
+      // Draw CTA button with reduced spacing from subtitle (94px height, 20px border radius, Lato font, 500 weight)
       const buttonX = svgX + 50;
-      const buttonY = titleY + 4; // Reduced spacing from subtitle (was 16px, now 4px = 16-12)
+      const buttonY = titleY - 2; // Reduced spacing from subtitle by 6px (was 4px, now -2px = 4-6)
       const buttonWidth = 220;
       const buttonHeight = 94;
-      const buttonRadius = 20; // Updated from 12px to 20px
+      const buttonRadius = 20;
 
       ctx.fillStyle = 'white';
       drawRoundedRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text (34px font, black color, IBM Plex Sans)
+      // CTA text (34px font, black color, Lato font, 500 weight)
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 34px "IBM Plex Sans", Arial, sans-serif';
+      ctx.font = '500 34px "Lato", Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + buttonWidth / 2, buttonY + 58);
 
