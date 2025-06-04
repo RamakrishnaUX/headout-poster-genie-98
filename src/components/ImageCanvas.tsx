@@ -66,7 +66,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             ctaPos: { x: width - 126 - 220, y: height - 144 - 94 }, // 126px from right, 144px from bottom
-            imageArea: { x: (width - 928) / 2, y: height - 342 - 700, width: 928, height: 700 }, // centered horizontally, 342px from bottom
+            imageArea: { x: (width - 950) / 2, y: height - 330 - 730, width: 950, height: 730 }, // centered horizontally, 330px from bottom
             textMaxWidth: 650,
             ctaWidth: 220
           };
@@ -79,7 +79,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             subtitleFontSize: 28,
             ctaFontSize: 34,
             ctaHeight: 76,
-            imageArea: { x: width - 105 - 430, y: 98, width: 430, height: 502 }, // 105px from right, 98px from top
+            imageArea: { x: width - 100 - 502, y: 98, width: 502, height: 430 }, // 100px from right, 98px from top
             textMaxWidth: 450,
             ctaWidth: 220
           };
@@ -570,7 +570,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       // Draw title
       const { titlePos, titleFontSize, textMaxWidth } = layout;
       ctx.fillStyle = 'white';
-      ctx.font = `bold ${titleFontSize}px "Lato", Arial, sans-serif`;
+      ctx.font = `600 ${titleFontSize}px "Lato", Arial, sans-serif`;
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
