@@ -570,6 +570,59 @@ const Index = () => {
             <CardContent>
               <div className="flex justify-center">
                 <div className="relative">
+                  {/* Hidden canvases for other formats */}
+                  <div className="hidden">
+                    {selectedFormat !== '900x1600' && (
+                      <ImageCanvas
+                        ref={canvasRef900x1600}
+                        title={title}
+                        subtitle={subtitle}
+                        ctaText={ctaText}
+                        uploadedImage={uploadedImage}
+                        uploadedSvg={uploadedSvg900x1600}
+                        uploadedLogo={uploadedLogo}
+                        svgGradient={svgGradient}
+                        gradientAngle={gradientAngle}
+                        gradientColors={gradientColors}
+                        format="900x1600"
+                        hideControls={true}
+                      />
+                    )}
+                    {selectedFormat !== '1200x1200' && (
+                      <ImageCanvas
+                        ref={canvasRef1200x1200}
+                        title={title}
+                        subtitle={subtitle}
+                        ctaText={ctaText}
+                        uploadedImage={uploadedImage}
+                        uploadedSvg={uploadedSvg1200x1200}
+                        uploadedLogo={uploadedLogo}
+                        svgGradient={svgGradient}
+                        gradientAngle={gradientAngle}
+                        gradientColors={gradientColors}
+                        format="1200x1200"
+                        hideControls={true}
+                      />
+                    )}
+                    {selectedFormat !== '1200x628' && (
+                      <ImageCanvas
+                        ref={canvasRef1200x628}
+                        title={title}
+                        subtitle={subtitle}
+                        ctaText={ctaText}
+                        uploadedImage={uploadedImage}
+                        uploadedSvg={uploadedSvg1200x628}
+                        uploadedLogo={uploadedLogo}
+                        svgGradient={svgGradient}
+                        gradientAngle={gradientAngle}
+                        gradientColors={gradientColors}
+                        format="1200x628"
+                        hideControls={true}
+                      />
+                    )}
+                  </div>
+
+                  {/* Live preview canvas */}
                   <ImageCanvas
                     ref={getCurrentCanvasRef()}
                     title={title}
@@ -582,57 +635,9 @@ const Index = () => {
                     gradientAngle={gradientAngle}
                     gradientColors={gradientColors}
                     format={selectedFormat}
+                    hideControls={false}
                   />
                 </div>
-              </div>
-              
-              {/* Hidden canvases for other formats */}
-              <div className="hidden">
-                {selectedFormat !== '900x1600' && (
-                  <ImageCanvas
-                    ref={canvasRef900x1600}
-                    title={title}
-                    subtitle={subtitle}
-                    ctaText={ctaText}
-                    uploadedImage={uploadedImage}
-                    uploadedSvg={uploadedSvg900x1600}
-                    uploadedLogo={uploadedLogo}
-                    svgGradient={svgGradient}
-                    gradientAngle={gradientAngle}
-                    gradientColors={gradientColors}
-                    format="900x1600"
-                  />
-                )}
-                {selectedFormat !== '1200x1200' && (
-                  <ImageCanvas
-                    ref={canvasRef1200x1200}
-                    title={title}
-                    subtitle={subtitle}
-                    ctaText={ctaText}
-                    uploadedImage={uploadedImage}
-                    uploadedSvg={uploadedSvg1200x1200}
-                    uploadedLogo={uploadedLogo}
-                    svgGradient={svgGradient}
-                    gradientAngle={gradientAngle}
-                    gradientColors={gradientColors}
-                    format="1200x1200"
-                  />
-                )}
-                {selectedFormat !== '1200x628' && (
-                  <ImageCanvas
-                    ref={canvasRef1200x628}
-                    title={title}
-                    subtitle={subtitle}
-                    ctaText={ctaText}
-                    uploadedImage={uploadedImage}
-                    uploadedSvg={uploadedSvg1200x628}
-                    uploadedLogo={uploadedLogo}
-                    svgGradient={svgGradient}
-                    gradientAngle={gradientAngle}
-                    gradientColors={gradientColors}
-                    format="1200x628"
-                  />
-                )}
               </div>
             </CardContent>
           </Card>
