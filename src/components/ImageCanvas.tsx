@@ -59,14 +59,14 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         case '1200x1200':
           return {
             svgPadding: { x: 50, y: 50, width: 1100, height: 1100 },
-            logoPos: { x: 126, y: height - 144 - 220, width: 220 }, // 126px from left, 144px from bottom
-            titlePos: { x: 126, y: height - 144 - 150 }, // 126px from left, positioned above logo
+            logoPos: { x: 126, y: 50 + 52, width: 220 }, // 126px from left, 52px from top of SVG
+            titlePos: { x: 126, y: 50 + 900 }, // 126px from left, 900px from top of SVG
             titleFontSize: 54,
             subtitleFontSize: 34,
             ctaFontSize: 34,
             ctaHeight: 94,
             ctaPos: { x: width - 126 - 220, y: height - 144 - 94 }, // 126px from right, 144px from bottom
-            imageArea: { x: (width - 950) / 2, y: height - 330 - 730, width: 950, height: 730 }, // centered horizontally, 330px from bottom
+            imageArea: { x: (width - 960) / 2, y: height - 320 - 750, width: 960, height: 750 }, // centered horizontally, 320px from bottom
             textMaxWidth: 650,
             ctaWidth: 220
           };
@@ -79,7 +79,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             subtitleFontSize: 28,
             ctaFontSize: 34,
             ctaHeight: 76,
-            imageArea: { x: width - 100 - 502, y: 98, width: 502, height: 430 }, // 100px from right, 98px from top
+            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 436 }, // 100px from right, 98px from top
             textMaxWidth: 450,
             ctaWidth: 220
           };
