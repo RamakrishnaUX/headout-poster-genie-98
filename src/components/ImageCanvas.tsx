@@ -10,6 +10,7 @@ interface ImageCanvasProps {
   gradientColors?: string[];
   format: '900x1600' | '1200x1200' | '1200x628';
   hideControls?: boolean;
+  enableGradient?: boolean;
 }
 
 interface ImageTransform {
@@ -19,7 +20,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false, enableGradient = false }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -357,34 +358,40 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           svgImg.src = getDefaultSvgPath();
         });
 
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = svgPadding.width;
-        tempCanvas.height = svgPadding.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        if (tempCtx) {
-          // Create gradient using custom colors and angle
-          const angleRad = (gradientAngle * Math.PI) / 180;
-          const x1 = svgPadding.width / 2 - Math.cos(angleRad) * svgPadding.width / 2;
-          const y1 = svgPadding.height / 2 - Math.sin(angleRad) * svgPadding.height / 2;
-          const x2 = svgPadding.width / 2 + Math.cos(angleRad) * svgPadding.width / 2;
-          const y2 = svgPadding.height / 2 + Math.sin(angleRad) * svgPadding.height / 2;
+        if (enableGradient) {
+          // Apply gradient to SVG
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = svgPadding.width;
+          tempCanvas.height = svgPadding.height;
+          const tempCtx = tempCanvas.getContext('2d');
           
-          const gradient = tempCtx.createLinearGradient(x1, y1, x2, y2);
-          
-          // Add multiple colors with equal spacing
-          gradientColors.forEach((color, index) => {
-            const position = index / (gradientColors.length - 1);
-            gradient.addColorStop(position, color);
-          });
-          
-          tempCtx.fillStyle = gradient;
-          tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
-          
-          tempCtx.globalCompositeOperation = 'destination-in';
-          tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
-          
-          ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
+          if (tempCtx) {
+            // Create gradient using custom colors and angle
+            const angleRad = (gradientAngle * Math.PI) / 180;
+            const x1 = svgPadding.width / 2 - Math.cos(angleRad) * svgPadding.width / 2;
+            const y1 = svgPadding.height / 2 - Math.sin(angleRad) * svgPadding.height / 2;
+            const x2 = svgPadding.width / 2 + Math.cos(angleRad) * svgPadding.width / 2;
+            const y2 = svgPadding.height / 2 + Math.sin(angleRad) * svgPadding.height / 2;
+            
+            const gradient = tempCtx.createLinearGradient(x1, y1, x2, y2);
+            
+            // Add multiple colors with equal spacing
+            gradientColors.forEach((color, index) => {
+              const position = index / (gradientColors.length - 1);
+              gradient.addColorStop(position, color);
+            });
+            
+            tempCtx.fillStyle = gradient;
+            tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
+            
+            tempCtx.globalCompositeOperation = 'destination-in';
+            tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
+            
+            ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
+          }
+        } else {
+          // Draw SVG as is without gradient
+          ctx.drawImage(svgImg, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
         }
       } catch (error) {
         console.error('Error loading SVG:', error);
