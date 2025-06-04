@@ -27,6 +27,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     const [isResizing, setIsResizing] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
     const [imageLoaded, setImageLoaded] = useState<HTMLImageElement | null>(null);
+    const defaultLogoPath = '/assets/headout-logo.svg';
 
     useImperativeHandle(ref, () => canvasRef.current as HTMLCanvasElement);
 
@@ -468,7 +469,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
       // Draw logo with improved quality
       const { logoPos } = layout;
-      if (uploadedLogo) {
+      if (uploadedLogo || defaultLogoPath) {
         try {
           const logoImg = new Image();
           logoImg.crossOrigin = 'anonymous';
@@ -476,7 +477,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           await new Promise((resolve, reject) => {
             logoImg.onload = resolve;
             logoImg.onerror = reject;
-            logoImg.src = uploadedLogo;
+            logoImg.src = uploadedLogo || defaultLogoPath;
           });
 
           // Enable image smoothing for better quality
@@ -501,15 +502,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           
           ctx.fillText('🏊 headout', logoX, logoY);
         }
-      } else {
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 36px ui-sans-serif, system-ui, sans-serif';
-        ctx.textAlign = 'left';
-        
-        const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
-        const logoY = format === '1200x1200' ? logoPos.y + 36 : svgPadding.y + logoPos.y + 36;
-        
-        ctx.fillText('🏊 headout', logoX, logoY);
       }
 
       // Draw title with UI sans serif and font weight 700
