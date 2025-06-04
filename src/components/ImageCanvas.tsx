@@ -8,8 +8,8 @@ interface ImageCanvasProps {
   uploadedSvg: string | null;
   uploadedLogo: string | null;
   svgGradient: string;
-  customGradientStart?: string;
-  customGradientEnd?: string;
+  gradientAngle?: number;
+  gradientColors?: string[];
   format: '900x1600' | '1200x1200' | '1200x628';
 }
 
@@ -20,7 +20,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient, customGradientStart = '#a855f7', customGradientEnd = '#6b21a8', format }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -59,14 +59,14 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         case '1200x1200':
           return {
             svgPadding: { x: 50, y: 50, width: 1100, height: 1100 },
-            logoPos: { x: 126, y: 50 + 52, width: 220 }, // 126px from left, 52px from top of SVG
-            titlePos: { x: 126, y: 50 + 900 }, // 126px from left, 900px from top of SVG
+            logoPos: { x: 126, y: 50 + 52, width: 220 },
+            titlePos: { x: 126, y: height - 138 - 80 }, // End at 138px from bottom
             titleFontSize: 54,
             subtitleFontSize: 34,
             ctaFontSize: 34,
             ctaHeight: 94,
-            ctaPos: { x: width - 126 - 220, y: height - 144 - 94 }, // 126px from right, 144px from bottom
-            imageArea: { x: (width - 960) / 2, y: height - 320 - 750, width: 960, height: 750 }, // centered horizontally, 320px from bottom
+            ctaPos: { x: width - 126 - 220, y: height - 144 - 94 },
+            imageArea: { x: (width - 960) / 2, y: (height - 734) / 2 - 50, width: 960, height: 734 }, // 960x734 as specified
             textMaxWidth: 650,
             ctaWidth: 220
           };
@@ -79,7 +79,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             subtitleFontSize: 28,
             ctaFontSize: 34,
             ctaHeight: 76,
-            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 436 }, // 100px from right, 98px from top
+            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 440 }, // 510x440 as specified
             textMaxWidth: 450,
             ctaWidth: 220
           };
@@ -192,9 +192,21 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       
       // Check for custom gradient
       if (svgGradient === 'custom') {
-        gradient = ctx.createLinearGradient(x, y, x, y + height);
-        gradient.addColorStop(0, customGradientStart);
-        gradient.addColorStop(1, customGradientEnd);
+        // Convert angle to radians and create directional gradient
+        const angleRad = (gradientAngle * Math.PI) / 180;
+        const x1 = x + width / 2 - Math.cos(angleRad) * width / 2;
+        const y1 = y + height / 2 - Math.sin(angleRad) * height / 2;
+        const x2 = x + width / 2 + Math.cos(angleRad) * width / 2;
+        const y2 = y + height / 2 + Math.sin(angleRad) * height / 2;
+        
+        gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+        
+        // Add multiple colors with equal spacing
+        gradientColors.forEach((color, index) => {
+          const position = index / (gradientColors.length - 1);
+          gradient.addColorStop(position, color);
+        });
+        
         return gradient;
       }
       
@@ -548,7 +560,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         } catch (error) {
           console.error('Error loading logo:', error);
           ctx.fillStyle = 'white';
-          ctx.font = 'bold 36px Arial';
+          ctx.font = 'bold 36px ui-sans-serif, system-ui, sans-serif';
           ctx.textAlign = 'left';
           
           const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
@@ -558,7 +570,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       } else {
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 36px Arial';
+        ctx.font = 'bold 36px ui-sans-serif, system-ui, sans-serif';
         ctx.textAlign = 'left';
         
         const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
@@ -567,10 +579,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillText('🏊 headout', logoX, logoY);
       }
 
-      // Draw title
+      // Draw title with UI sans serif and font weight 700
       const { titlePos, titleFontSize, textMaxWidth } = layout;
       ctx.fillStyle = 'white';
-      ctx.font = `600 ${titleFontSize}px "Lato", Arial, sans-serif`;
+      ctx.font = `700 ${titleFontSize}px ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
@@ -606,7 +618,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       // Draw subtitle
       const { subtitleFontSize } = layout;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = `400 ${subtitleFontSize}px "Lato", Arial, sans-serif`;
+      ctx.font = `400 ${subtitleFontSize}px ui-sans-serif, system-ui, sans-serif`;
       
       titleY -= 4;
       
@@ -653,9 +665,9 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       drawRoundedRect(ctx, buttonX, buttonY, ctaWidth, ctaHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text
+      // CTA text with font weight 500
       ctx.fillStyle = '#000000';
-      ctx.font = `500 ${ctaFontSize}px "Lato", Arial, sans-serif`;
+      ctx.font = `500 ${ctaFontSize}px ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + ctaWidth / 2, buttonY + ctaHeight / 2 + ctaFontSize / 3);
 
@@ -698,7 +710,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       ctx.clearRect(0, 0, width, height);
       
       drawCard(ctx);
-    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, customGradientStart, customGradientEnd, format]);
+    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, gradientAngle, gradientColors, format]);
 
     const { width, height } = getCanvasDimensions();
     const maxDisplayWidth = format === '1200x628' ? 600 : 450;
