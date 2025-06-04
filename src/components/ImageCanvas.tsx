@@ -66,7 +66,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             ctaPos: { x: width - 126 - 220, y: height - 144 - 94 },
-            imageArea: { x: (width - 960) / 2, y: (height - 764) / 2 - 50, width: 960, height: 764 }, // Updated to 960x764
+            imageArea: { x: (width - 970) / 2, y: 120, width: 970, height: 764 }, // Updated to 970x764, starting 120px from top
             textMaxWidth: 650,
             ctaWidth: 220
           };
@@ -79,7 +79,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             subtitleFontSize: 28,
             ctaFontSize: 34,
             ctaHeight: 76,
-            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 450 }, // Updated to 510x450
+            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 450 },
             textMaxWidth: 450,
             ctaWidth: 220
           };
@@ -466,7 +466,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       }
 
-      // Draw logo
+      // Draw logo with improved quality
       const { logoPos } = layout;
       if (uploadedLogo) {
         try {
@@ -478,6 +478,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             logoImg.onerror = reject;
             logoImg.src = uploadedLogo;
           });
+
+          // Enable image smoothing for better quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
 
           const logoHeight = (logoImg.height / logoImg.width) * logoPos.width;
           
