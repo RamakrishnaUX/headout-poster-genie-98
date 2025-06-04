@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, Plus, Minus } from 'lucide-react';
+import { Upload, Download, Plus, Minus, Archive } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageCanvas from '@/components/ImageCanvas';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,6 +16,7 @@ const Index = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<'900x1600' | '1200x1200' | '1200x628'>('900x1600');
+  const [downloadFormat, setDownloadFormat] = useState<'png' | 'jpeg'>('png');
   
   // Separate SVG uploads for each format
   const [uploadedSvg900x1600, setUploadedSvg900x1600] = useState<string | null>(null);
@@ -30,7 +32,9 @@ const Index = () => {
   const svgInputRef900x1600 = useRef<HTMLInputElement>(null);
   const svgInputRef1200x1200 = useRef<HTMLInputElement>(null);
   const svgInputRef1200x628 = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef900x1600 = useRef<HTMLCanvasElement>(null);
+  const canvasRef1200x1200 = useRef<HTMLCanvasElement>(null);
+  const canvasRef1200x628 = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   const getCurrentSvg = () => {
@@ -39,6 +43,15 @@ const Index = () => {
       case '1200x1200': return uploadedSvg1200x1200;
       case '1200x628': return uploadedSvg1200x628;
       default: return uploadedSvg900x1600;
+    }
+  };
+
+  const getCurrentCanvasRef = () => {
+    switch (selectedFormat) {
+      case '900x1600': return canvasRef900x1600;
+      case '1200x1200': return canvasRef1200x1200;
+      case '1200x628': return canvasRef1200x628;
+      default: return canvasRef900x1600;
     }
   };
 
@@ -81,17 +94,53 @@ const Index = () => {
   };
 
   const handleDownload = () => {
-    const canvas = canvasRef.current;
+    const canvas = getCurrentCanvasRef().current;
     if (canvas) {
       const link = document.createElement('a');
-      link.download = `promotional-image-${selectedFormat}.png`;
-      link.href = canvas.toDataURL();
+      link.download = `promotional-image-${selectedFormat}.${downloadFormat}`;
+      const quality = downloadFormat === 'jpeg' ? 0.95 : undefined;
+      link.href = canvas.toDataURL(`image/${downloadFormat}`, quality);
       link.click();
       toast({
         title: "Image Downloaded",
         description: `Your ${selectedFormat} promotional image has been saved successfully!`,
       });
     }
+  };
+
+  const handleBulkDownload = async () => {
+    const formats = ['900x1600', '1200x1200', '1200x628'] as const;
+    const canvases = [canvasRef900x1600, canvasRef1200x1200, canvasRef1200x628];
+    
+    // Create a zip-like structure using JSZip functionality (we'll simulate it)
+    const files: Array<{ name: string; data: string }> = [];
+    
+    formats.forEach((format, index) => {
+      const canvas = canvases[index].current;
+      if (canvas) {
+        const quality = downloadFormat === 'jpeg' ? 0.95 : undefined;
+        const dataUrl = canvas.toDataURL(`image/${downloadFormat}`, quality);
+        files.push({
+          name: `promotional-image-${format}.${downloadFormat}`,
+          data: dataUrl
+        });
+      }
+    });
+
+    // Download each file individually (simulating bulk download)
+    files.forEach((file, index) => {
+      setTimeout(() => {
+        const link = document.createElement('a');
+        link.download = file.name;
+        link.href = file.data;
+        link.click();
+      }, index * 100); // Small delay between downloads
+    });
+
+    toast({
+      title: "Bulk Download Started",
+      description: `Downloading all 3 promotional images in ${downloadFormat.toUpperCase()} format!`,
+    });
   };
 
   const addGradientColor = () => {
@@ -115,9 +164,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-left mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            Promotional Image Generator
+            Promotional image generator
           </h1>
           <p className="text-gray-600 text-lg">
             Create stunning promotional graphics with custom content and images
@@ -160,6 +209,20 @@ const Index = () => {
                     1200×628
                   </Button>
                 </div>
+              </div>
+
+              {/* Download Format Selection */}
+              <div className="space-y-2">
+                <Label>Download Format</Label>
+                <Select value={downloadFormat} onValueChange={(value: 'png' | 'jpeg') => setDownloadFormat(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="png">PNG (Lossless)</SelectItem>
+                    <SelectItem value="jpeg">JPEG (Smaller file)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -341,31 +404,6 @@ const Index = () => {
                       className="bg-gradient-to-r from-cyan-500 to-blue-600 h-8"
                     />
                     
-                    {/* Mesh/Aurora Gradients */}
-                    <Button
-                      onClick={() => setSvgGradient('mesh-rainbow')}
-                      variant={svgGradient === 'mesh-rainbow' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-sunset')}
-                      variant={svgGradient === 'mesh-sunset' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-ocean')}
-                      variant={svgGradient === 'mesh-ocean' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('mesh-aurora')}
-                      variant={svgGradient === 'mesh-aurora' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-cyan-400 via-blue-500 via-purple-500 to-pink-500 h-8"
-                    />
                     <Button
                       onClick={() => setSvgGradient('custom')}
                       variant={svgGradient === 'custom' ? 'default' : 'outline'}
@@ -480,14 +518,26 @@ const Index = () => {
                 )}
               </div>
 
-              <Button
-                onClick={handleDownload}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                size="lg"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download {selectedFormat} Image
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  onClick={handleDownload}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  size="lg"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download {selectedFormat} Image
+                </Button>
+                
+                <Button
+                  onClick={handleBulkDownload}
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
+                  <Archive className="w-4 h-4 mr-2" />
+                  Download All 3 Formats
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -500,7 +550,7 @@ const Index = () => {
               <div className="flex justify-center">
                 <div className="relative">
                   <ImageCanvas
-                    ref={canvasRef}
+                    ref={getCurrentCanvasRef()}
                     title={title}
                     subtitle={subtitle}
                     ctaText={ctaText}
@@ -513,6 +563,55 @@ const Index = () => {
                     format={selectedFormat}
                   />
                 </div>
+              </div>
+              
+              {/* Hidden canvases for other formats */}
+              <div className="hidden">
+                {selectedFormat !== '900x1600' && (
+                  <ImageCanvas
+                    ref={canvasRef900x1600}
+                    title={title}
+                    subtitle={subtitle}
+                    ctaText={ctaText}
+                    uploadedImage={uploadedImage}
+                    uploadedSvg={uploadedSvg900x1600}
+                    uploadedLogo={uploadedLogo}
+                    svgGradient={svgGradient}
+                    gradientAngle={gradientAngle}
+                    gradientColors={gradientColors}
+                    format="900x1600"
+                  />
+                )}
+                {selectedFormat !== '1200x1200' && (
+                  <ImageCanvas
+                    ref={canvasRef1200x1200}
+                    title={title}
+                    subtitle={subtitle}
+                    ctaText={ctaText}
+                    uploadedImage={uploadedImage}
+                    uploadedSvg={uploadedSvg1200x1200}
+                    uploadedLogo={uploadedLogo}
+                    svgGradient={svgGradient}
+                    gradientAngle={gradientAngle}
+                    gradientColors={gradientColors}
+                    format="1200x1200"
+                  />
+                )}
+                {selectedFormat !== '1200x628' && (
+                  <ImageCanvas
+                    ref={canvasRef1200x628}
+                    title={title}
+                    subtitle={subtitle}
+                    ctaText={ctaText}
+                    uploadedImage={uploadedImage}
+                    uploadedSvg={uploadedSvg1200x628}
+                    uploadedLogo={uploadedLogo}
+                    svgGradient={svgGradient}
+                    gradientAngle={gradientAngle}
+                    gradientColors={gradientColors}
+                    format="1200x628"
+                  />
+                )}
               </div>
             </CardContent>
           </Card>

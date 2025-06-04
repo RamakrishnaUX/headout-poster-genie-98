@@ -66,7 +66,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             ctaPos: { x: width - 126 - 220, y: height - 144 - 94 },
-            imageArea: { x: (width - 960) / 2, y: (height - 734) / 2 - 50, width: 960, height: 734 }, // 960x734 as specified
+            imageArea: { x: (width - 960) / 2, y: (height - 764) / 2 - 50, width: 960, height: 764 }, // Updated to 960x764
             textMaxWidth: 650,
             ctaWidth: 220
           };
@@ -79,7 +79,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             subtitleFontSize: 28,
             ctaFontSize: 34,
             ctaHeight: 76,
-            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 440 }, // 510x440 as specified
+            imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 450 }, // Updated to 510x450
             textMaxWidth: 450,
             ctaWidth: 220
           };
@@ -125,70 +125,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       return layout.imageArea;
     };
 
-    const createMeshGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, type: string) => {
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
-      
-      switch (type) {
-        case 'mesh-rainbow':
-          // Create multiple radial gradients for mesh effect
-          const gradient1 = ctx.createRadialGradient(x + width * 0.3, y + height * 0.3, 0, x + width * 0.3, y + height * 0.3, width * 0.5);
-          gradient1.addColorStop(0, '#ff6b6b');
-          gradient1.addColorStop(0.5, '#4ecdc4');
-          gradient1.addColorStop(1, 'transparent');
-          
-          const gradient2 = ctx.createRadialGradient(x + width * 0.7, y + height * 0.7, 0, x + width * 0.7, y + height * 0.7, width * 0.5);
-          gradient2.addColorStop(0, '#45b7d1');
-          gradient2.addColorStop(0.5, '#f9ca24');
-          gradient2.addColorStop(1, 'transparent');
-          
-          // Apply gradients with blend modes
-          ctx.save();
-          ctx.fillStyle = gradient1;
-          ctx.fillRect(x, y, width, height);
-          ctx.globalCompositeOperation = 'multiply';
-          ctx.fillStyle = gradient2;
-          ctx.fillRect(x, y, width, height);
-          ctx.restore();
-          return null; // Already applied
-          
-        case 'mesh-sunset':
-          const sunsetGradient = ctx.createRadialGradient(centerX, y + height * 0.2, 0, centerX, centerY, width * 0.8);
-          sunsetGradient.addColorStop(0, '#ff9a56');
-          sunsetGradient.addColorStop(0.3, '#ff6b9d');
-          sunsetGradient.addColorStop(0.6, '#c44569');
-          sunsetGradient.addColorStop(1, '#2d1b69');
-          return sunsetGradient;
-          
-        case 'mesh-ocean':
-          const oceanGradient = ctx.createRadialGradient(x + width * 0.2, y + width * 0.8, 0, centerX, centerY, width);
-          oceanGradient.addColorStop(0, '#667eea');
-          oceanGradient.addColorStop(0.4, '#764ba2');
-          oceanGradient.addColorStop(0.7, '#f093fb');
-          oceanGradient.addColorStop(1, '#f5576c');
-          return oceanGradient;
-          
-        case 'mesh-aurora':
-          const auroraGradient = ctx.createLinearGradient(x, y, x + width, y + height);
-          auroraGradient.addColorStop(0, '#00c6ff');
-          auroraGradient.addColorStop(0.25, '#0072ff');
-          auroraGradient.addColorStop(0.5, '#fc00ff');
-          auroraGradient.addColorStop(0.75, '#00dbde');
-          auroraGradient.addColorStop(1, '#fc00ff');
-          return auroraGradient;
-          
-        default:
-          return null;
-      }
-    };
-
     const applySvgGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
       let gradient;
-      
-      // Check for mesh gradients first
-      if (svgGradient.startsWith('mesh-')) {
-        return createMeshGradient(ctx, x, y, width, height, svgGradient);
-      }
       
       // Check for custom gradient
       if (svgGradient === 'custom') {
@@ -499,24 +437,15 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           const tempCtx = tempCanvas.getContext('2d');
           
           if (tempCtx) {
-            if (svgGradient.startsWith('mesh-')) {
-              const meshResult = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
-              if (!meshResult) {
-                tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
-                ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
-              }
-            } else {
-              const gradientFill = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
-              if (gradientFill) {
-                tempCtx.fillStyle = gradientFill;
-                tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
-                
-                tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
-                
-                ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
-              }
+            const gradientFill = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
+            if (gradientFill) {
+              tempCtx.fillStyle = gradientFill;
+              tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
+              
+              tempCtx.globalCompositeOperation = 'destination-in';
+              tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
+              
+              ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
             }
           }
         } catch (error) {
