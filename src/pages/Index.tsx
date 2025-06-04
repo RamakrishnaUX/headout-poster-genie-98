@@ -4,11 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, Plus, Minus, Archive, PackageOpen } from 'lucide-react';
+import { Upload, Download, Plus, Minus, Archive } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageCanvas from '@/components/ImageCanvas';
 import { useToast } from '@/hooks/use-toast';
-import JSZip from 'jszip';
 
 const Index = () => {
   const [title, setTitle] = useState('16 Water Attractions\nOne Epic Splash Day.');
@@ -30,7 +29,6 @@ const Index = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const zipInputRef = useRef<HTMLInputElement>(null);
   const svgInputRef900x1600 = useRef<HTMLInputElement>(null);
   const svgInputRef1200x1200 = useRef<HTMLInputElement>(null);
   const svgInputRef1200x628 = useRef<HTMLInputElement>(null);
@@ -54,84 +52,6 @@ const Index = () => {
       case '1200x1200': return canvasRef1200x1200;
       case '1200x628': return canvasRef1200x628;
       default: return canvasRef900x1600;
-    }
-  };
-
-  const handleBulkAssetUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !file.name.endsWith('.zip')) {
-      toast({
-        title: "Invalid File",
-        description: "Please upload a ZIP file containing your assets.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const zip = new JSZip();
-      const zipContent = await zip.loadAsync(file);
-      let assetsFound = 0;
-
-      // Process each file in the zip
-      for (const [filename, zipEntry] of Object.entries(zipContent.files)) {
-        if (zipEntry.dir) continue; // Skip directories
-
-        const fileExtension = filename.toLowerCase().split('.').pop();
-        const fileContent = await zipEntry.async('blob');
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(fileContent);
-        });
-
-        // Determine file type and assign to appropriate state
-        if (filename.toLowerCase().includes('logo') && ['png', 'jpg', 'jpeg', 'svg', 'webp'].includes(fileExtension || '')) {
-          setUploadedLogo(dataUrl);
-          assetsFound++;
-          console.log('Logo assigned:', filename);
-        } else if (filename.toLowerCase().includes('900x1600') && fileExtension === 'svg') {
-          setUploadedSvg900x1600(dataUrl);
-          assetsFound++;
-          console.log('SVG 900x1600 assigned:', filename);
-        } else if (filename.toLowerCase().includes('1200x1200') && fileExtension === 'svg') {
-          setUploadedSvg1200x1200(dataUrl);
-          assetsFound++;
-          console.log('SVG 1200x1200 assigned:', filename);
-        } else if (filename.toLowerCase().includes('1200x628') && fileExtension === 'svg') {
-          setUploadedSvg1200x628(dataUrl);
-          assetsFound++;
-          console.log('SVG 1200x628 assigned:', filename);
-        } else if (['png', 'jpg', 'jpeg', 'webp'].includes(fileExtension || '') && 
-                   (filename.toLowerCase().includes('main') || filename.toLowerCase().includes('image') || 
-                    (!filename.toLowerCase().includes('logo') && !filename.toLowerCase().includes('svg')))) {
-          setUploadedImage(dataUrl);
-          assetsFound++;
-          console.log('Main image assigned:', filename);
-        } else if (fileExtension === 'svg' && !filename.toLowerCase().includes('logo')) {
-          // If it's an SVG without specific format in name, assign to current format
-          switch (selectedFormat) {
-            case '900x1600': setUploadedSvg900x1600(dataUrl); break;
-            case '1200x1200': setUploadedSvg1200x1200(dataUrl); break;
-            case '1200x628': setUploadedSvg1200x628(dataUrl); break;
-          }
-          assetsFound++;
-          console.log('SVG assigned to current format:', filename, selectedFormat);
-        }
-      }
-
-      toast({
-        title: "Assets Uploaded Successfully",
-        description: `Found and imported ${assetsFound} assets from the ZIP file.`,
-      });
-
-    } catch (error) {
-      console.error('Error processing ZIP file:', error);
-      toast({
-        title: "Upload Failed",
-        description: "Failed to process the ZIP file. Please check the file format.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -263,31 +183,6 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Bulk Asset Upload */}
-              <div className="space-y-2">
-                <Label>Upload All Assets (ZIP)</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => zipInputRef.current?.click()}
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    <PackageOpen className="w-4 h-4 mr-2" />
-                    Upload ZIP with All Assets
-                  </Button>
-                  <input
-                    ref={zipInputRef}
-                    type="file"
-                    accept=".zip"
-                    onChange={handleBulkAssetUpload}
-                    className="hidden"
-                  />
-                </div>
-                <p className="text-xs text-gray-500">
-                  💡 Include files named: logo.png, main-image.jpg, 900x1600.svg, 1200x1200.svg, 1200x628.svg
-                </p>
-              </div>
-
               {/* Format Selection */}
               <div className="space-y-2">
                 <Label>Asset Format</Label>
