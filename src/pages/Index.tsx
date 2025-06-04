@@ -153,6 +153,86 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="image">Upload Image</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose Image
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
+                {uploadedImage && (
+                  <p className="text-sm text-green-600">✓ Image uploaded successfully</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="logo">Upload Logo</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => logoInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose Logo
+                  </Button>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </div>
+                {uploadedLogo && (
+                  <p className="text-sm text-green-600">✓ Logo uploaded successfully</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter your main title"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subtitle">Subtitle</Label>
+                  <Input
+                    id="subtitle"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Enter your subtitle"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cta">Call-to-Action Text</Label>
+                  <Input
+                    id="cta"
+                    value={ctaText}
+                    onChange={(e) => setCtaText(e.target.value)}
+                    placeholder="Enter CTA text"
+                  />
+                </div>
+              </div>
+
               {/* Format Selection */}
               <div className="space-y-2">
                 <Label>Asset Format</Label>
@@ -193,61 +273,6 @@ const Index = () => {
                     <SelectItem value="jpeg">JPEG (Smaller file)</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Textarea
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter your main title"
-                  className="min-h-[80px] resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subtitle">Subtitle</Label>
-                <Input
-                  id="subtitle"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="Enter your subtitle"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cta">Call-to-Action Text</Label>
-                <Input
-                  id="cta"
-                  value={ctaText}
-                  onChange={(e) => setCtaText(e.target.value)}
-                  placeholder="Enter CTA text"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="logo">Upload Logo</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => logoInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose Logo
-                  </Button>
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                </div>
-                {uploadedLogo && (
-                  <p className="text-sm text-green-600">✓ Logo uploaded successfully</p>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -362,33 +387,6 @@ const Index = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="image">Upload Image</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose Image
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </div>
-                {uploadedImage && (
-                  <div className="text-sm space-y-1">
-                    <p className="text-green-600">✓ Image uploaded successfully</p>
-                    <p className="text-gray-600">💡 Drag to move, use bottom-right handle to resize</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
                 <Button
                   onClick={handleDownload}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
@@ -434,6 +432,7 @@ const Index = () => {
                         format="900x1600"
                         hideControls={true}
                         enableGradient={enableGradient}
+                        isDownloadMode={true}
                       />
                     )}
                     {selectedFormat !== '1200x1200' && (
@@ -449,6 +448,7 @@ const Index = () => {
                         format="1200x1200"
                         hideControls={true}
                         enableGradient={enableGradient}
+                        isDownloadMode={true}
                       />
                     )}
                     {selectedFormat !== '1200x628' && (
@@ -464,6 +464,7 @@ const Index = () => {
                         format="1200x628"
                         hideControls={true}
                         enableGradient={enableGradient}
+                        isDownloadMode={true}
                       />
                     )}
                   </div>
@@ -481,6 +482,7 @@ const Index = () => {
                     format={selectedFormat}
                     hideControls={false}
                     enableGradient={enableGradient}
+                    isDownloadMode={false}
                   />
                 </div>
               </div>

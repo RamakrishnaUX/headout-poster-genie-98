@@ -11,6 +11,7 @@ interface ImageCanvasProps {
   format: '900x1600' | '1200x1200' | '1200x628';
   hideControls?: boolean;
   enableGradient?: boolean;
+  isDownloadMode?: boolean;
 }
 
 interface ImageTransform {
@@ -20,7 +21,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false, enableGradient = false }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false, enableGradient = false, isDownloadMode = false }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -57,20 +58,62 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             textMaxWidth: 650,
             ctaWidth: 220
           };
-        case '1200x1200':
+        case '1200x1200': {
+          // Create a temporary canvas context to measure text
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          if (tempCtx) {
+            tempCtx.font = `500 50px HalyardDisplay, ui-sans-serif, system-ui, sans-serif`;
+            
+            // Calculate if text will wrap to multiple lines
+            const words = title.split(' ');
+            let currentLine = '';
+            let lineCount = 1;
+            
+            for (let i = 0; i < words.length; i++) {
+              const testLine = currentLine + words[i] + ' ';
+              const metrics = tempCtx.measureText(testLine);
+              
+              if (metrics.width > 650 && currentLine !== '') {
+                lineCount++;
+                currentLine = words[i] + ' ';
+              } else {
+                currentLine = testLine;
+              }
+            }
+
+            // Return layout config based on line count
+            return {
+              svgPadding: { x: 73, y: 87, width: 1054, height: 1027 },
+              logoPos: { x: 130, y: 140, width: 220 },
+              titlePos: { x: 130, y: lineCount > 1 ? 940 : 1000 },
+              titleFontSize: 50,
+              subtitleFontSize: 34,
+              ctaFontSize: 34,
+              ctaHeight: 94,
+              ctaPos: { x: width - 102 - 250, y: height - 144 - 90 },
+              imageArea: { x: (width - 970) / 2, y: 134, width: 970, height: 764 },
+              textMaxWidth: 650,
+              ctaWidth: 220,
+              isDoubleLine: lineCount > 1
+            };
+          }
+          // Fallback if context creation fails
           return {
             svgPadding: { x: 73, y: 87, width: 1054, height: 1027 },
             logoPos: { x: 130, y: 140, width: 220 },
-            titlePos: { x: 130, y: 980 },
-            titleFontSize: 54,
+            titlePos: { x: 130, y: 1000 },
+            titleFontSize: 50,
             subtitleFontSize: 34,
             ctaFontSize: 34,
             ctaHeight: 94,
-            ctaPos: { x: width - 102 - 250, y: height - 144 - 100 },
-            imageArea: { x: (width - 970) / 2, y: 96, width: 970, height: 764 },
+            ctaPos: { x: width - 102 - 250, y: height - 144 - 90 },
+            imageArea: { x: (width - 970) / 2, y: 134, width: 970, height: 764 },
             textMaxWidth: 650,
-            ctaWidth: 220
+            ctaWidth: 220,
+            isDoubleLine: false
           };
+        }
         case '1200x628':
           return {
             svgPadding: { x: 54, y: 50, width: 1093, height: 520 },
@@ -336,11 +379,12 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
       // Add default SVG paths for each format
       const getDefaultSvgPath = () => {
+        const layout = getLayoutConfig();
         switch (format) {
           case '900x1600':
             return '/assets/900x1600.svg';
           case '1200x1200':
-            return '/assets/1200x1200.svg';
+            return layout.isDoubleLine ? '/assets/1200x1200_doubleline.svg' : '/assets/1200x1200.svg';
           case '1200x628':
             return '/assets/1200x628.svg';
           default:
@@ -540,22 +584,17 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + ctaWidth / 2, buttonY + ctaHeight / 2 + ctaFontSize / 3);
 
-      // Only show resize handle if not hiding controls and image is loaded
-      if (!hideControls && imageLoaded && uploadedImage) {
+      // Draw invisible resize handle if not in download mode and image is loaded
+      if (!isDownloadMode && imageLoaded && uploadedImage) {
         const bounds = getImageBounds();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.lineWidth = 1;
         const handleSize = 20;
         const handleX = bounds.x + bounds.width - handleSize;
         const handleY = bounds.y + bounds.height - handleSize;
         
+        // Set fully transparent fill for the handle area
+        ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0)';
         ctx.fillRect(handleX, handleY, handleSize, handleSize);
-        ctx.strokeRect(handleX, handleY, handleSize, handleSize);
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.fillRect(handleX + 15, handleY + 5, 2, 10);
-        ctx.fillRect(handleX + 5, handleY + 15, 10, 2);
       }
     };
 
