@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ImageCanvas from '@/components/ImageCanvas';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
+import '@/styles/fonts.css';
 
 const Index = () => {
   const [title, setTitle] = useState('16 Water Attractions\nOne Epic Splash Day.');
@@ -18,34 +19,15 @@ const Index = () => {
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<'900x1600' | '1200x1200' | '1200x628'>('900x1600');
   const [downloadFormat, setDownloadFormat] = useState<'png' | 'jpeg'>('png');
-  
-  // Separate SVG uploads for each format
-  const [uploadedSvg900x1600, setUploadedSvg900x1600] = useState<string | null>(null);
-  const [uploadedSvg1200x1200, setUploadedSvg1200x1200] = useState<string | null>(null);
-  const [uploadedSvg1200x628, setUploadedSvg1200x628] = useState<string | null>(null);
-  
-  const [svgGradient, setSvgGradient] = useState('purple');
   const [gradientAngle, setGradientAngle] = useState(45);
   const [gradientColors, setGradientColors] = useState(['#a855f7', '#6b21a8']);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const svgInputRef900x1600 = useRef<HTMLInputElement>(null);
-  const svgInputRef1200x1200 = useRef<HTMLInputElement>(null);
-  const svgInputRef1200x628 = useRef<HTMLInputElement>(null);
   const canvasRef900x1600 = useRef<HTMLCanvasElement>(null);
   const canvasRef1200x1200 = useRef<HTMLCanvasElement>(null);
   const canvasRef1200x628 = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
-
-  const getCurrentSvg = () => {
-    switch (selectedFormat) {
-      case '900x1600': return uploadedSvg900x1600;
-      case '1200x1200': return uploadedSvg1200x1200;
-      case '1200x628': return uploadedSvg1200x628;
-      default: return uploadedSvg900x1600;
-    }
-  };
 
   const getCurrentCanvasRef = () => {
     switch (selectedFormat) {
@@ -62,22 +44,6 @@ const Index = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSvgUpload = (format: '900x1600' | '1200x1200' | '1200x628') => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        switch (format) {
-          case '900x1600': setUploadedSvg900x1600(result); break;
-          case '1200x1200': setUploadedSvg1200x1200(result); break;
-          case '1200x628': setUploadedSvg1200x628(result); break;
-        }
       };
       reader.readAsDataURL(file);
     }
@@ -162,24 +128,6 @@ const Index = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const addGradientColor = () => {
-    if (gradientColors.length < 5) {
-      setGradientColors([...gradientColors, '#8b5cf6']);
-    }
-  };
-
-  const removeGradientColor = (index: number) => {
-    if (gradientColors.length > 2) {
-      setGradientColors(gradientColors.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateGradientColor = (index: number, color: string) => {
-    const newColors = [...gradientColors];
-    newColors[index] = color;
-    setGradientColors(newColors);
   };
 
   return (
@@ -301,214 +249,97 @@ const Index = () => {
                 )}
               </div>
 
-              {/* SVG Background for Current Format */}
               <div className="space-y-2">
-                <Label>Upload SVG Background ({selectedFormat})</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => {
-                      switch (selectedFormat) {
-                        case '900x1600': svgInputRef900x1600.current?.click(); break;
-                        case '1200x1200': svgInputRef1200x1200.current?.click(); break;
-                        case '1200x628': svgInputRef1200x628.current?.click(); break;
-                      }
-                    }}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose SVG for {selectedFormat}
-                  </Button>
-                  
-                  <input
-                    ref={svgInputRef900x1600}
-                    type="file"
-                    accept=".svg,image/svg+xml"
-                    onChange={handleSvgUpload('900x1600')}
-                    className="hidden"
-                  />
-                  <input
-                    ref={svgInputRef1200x1200}
-                    type="file"
-                    accept=".svg,image/svg+xml"
-                    onChange={handleSvgUpload('1200x1200')}
-                    className="hidden"
-                  />
-                  <input
-                    ref={svgInputRef1200x628}
-                    type="file"
-                    accept=".svg,image/svg+xml"
-                    onChange={handleSvgUpload('1200x628')}
-                    className="hidden"
-                  />
-                </div>
-                {getCurrentSvg() && (
-                  <p className="text-sm text-green-600">✓ SVG uploaded for {selectedFormat}</p>
-                )}
-                
-                {/* Enhanced SVG Gradient Options */}
-                <div className="space-y-4">
-                  <Label>SVG Gradient (when no SVG uploaded)</Label>
-                  
-                  {/* Basic Gradients */}
-                  <div className="grid grid-cols-6 gap-2">
-                    <Button
-                      onClick={() => setSvgGradient('purple')}
-                      variant={svgGradient === 'purple' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-purple-500 to-purple-700 h-8"
+                <Label>SVG Background Gradient</Label>
+                <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                  {/* Gradient Angle */}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Gradient Angle: {gradientAngle}°</Label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      value={gradientAngle}
+                      onChange={(e) => setGradientAngle(Number(e.target.value))}
+                      className="w-full"
                     />
-                    <Button
-                      onClick={() => setSvgGradient('blue')}
-                      variant={svgGradient === 'blue' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-blue-500 to-blue-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('green')}
-                      variant={svgGradient === 'green' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-green-500 to-green-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('orange')}
-                      variant={svgGradient === 'orange' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-orange-500 to-orange-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('pink')}
-                      variant={svgGradient === 'pink' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-pink-500 to-pink-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('teal')}
-                      variant={svgGradient === 'teal' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-teal-500 to-teal-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('indigo')}
-                      variant={svgGradient === 'indigo' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-indigo-500 to-indigo-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('red')}
-                      variant={svgGradient === 'red' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-red-500 to-red-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('yellow')}
-                      variant={svgGradient === 'yellow' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-yellow-500 to-yellow-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('cyan')}
-                      variant={svgGradient === 'cyan' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-cyan-500 to-cyan-700 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('sunset')}
-                      variant={svgGradient === 'sunset' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 h-8"
-                    />
-                    <Button
-                      onClick={() => setSvgGradient('ocean')}
-                      variant={svgGradient === 'ocean' ? 'default' : 'outline'}
-                      size="sm"
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 h-8"
-                    />
-                    
-                    <Button
-                      onClick={() => setSvgGradient('custom')}
-                      variant={svgGradient === 'custom' ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      Custom
-                    </Button>
                   </div>
-
-                  {/* Custom Gradient Controls */}
-                  {svgGradient === 'custom' && (
-                    <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                      <Label className="text-sm font-semibold">Custom Gradient</Label>
-                      
-                      {/* Gradient Angle */}
-                      <div className="space-y-2">
-                        <Label className="text-xs">Gradient Angle: {gradientAngle}°</Label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="360"
-                          value={gradientAngle}
-                          onChange={(e) => setGradientAngle(Number(e.target.value))}
-                          className="w-full"
-                        />
+                  
+                  {/* Gradient Colors */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Colors</Label>
+                      <div className="flex gap-1">
+                        <Button
+                          onClick={() => {
+                            if (gradientColors.length < 5) {
+                              setGradientColors([...gradientColors, '#8b5cf6']);
+                            }
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          disabled={gradientColors.length >= 5}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            if (gradientColors.length > 2) {
+                              setGradientColors(gradientColors.slice(0, -1));
+                            }
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          disabled={gradientColors.length <= 2}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
                       </div>
-                      
-                      {/* Gradient Colors */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs">Colors</Label>
-                          <div className="flex gap-1">
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {gradientColors.map((color, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={color}
+                            onChange={(e) => {
+                              const newColors = [...gradientColors];
+                              newColors[index] = e.target.value;
+                              setGradientColors(newColors);
+                            }}
+                            className="w-8 h-8 rounded border cursor-pointer"
+                          />
+                          <Input
+                            value={color}
+                            onChange={(e) => {
+                              const newColors = [...gradientColors];
+                              newColors[index] = e.target.value;
+                              setGradientColors(newColors);
+                            }}
+                            className="text-xs flex-1"
+                            placeholder="#a855f7"
+                          />
+                          {gradientColors.length > 2 && (
                             <Button
-                              onClick={addGradientColor}
+                              onClick={() => {
+                                if (gradientColors.length > 2) {
+                                  setGradientColors(gradientColors.filter((_, i) => i !== index));
+                                }
+                              }}
                               size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              disabled={gradientColors.length >= 5}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              onClick={() => removeGradientColor(gradientColors.length - 1)}
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              disabled={gradientColors.length <= 2}
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-red-500"
                             >
                               <Minus className="w-3 h-3" />
                             </Button>
-                          </div>
+                          )}
                         </div>
-                        
-                        <div className="space-y-2">
-                          {gradientColors.map((color, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <input
-                                type="color"
-                                value={color}
-                                onChange={(e) => updateGradientColor(index, e.target.value)}
-                                className="w-8 h-8 rounded border cursor-pointer"
-                              />
-                              <Input
-                                value={color}
-                                onChange={(e) => updateGradientColor(index, e.target.value)}
-                                className="text-xs flex-1"
-                                placeholder="#a855f7"
-                              />
-                              {gradientColors.length > 2 && (
-                                <Button
-                                  onClick={() => removeGradientColor(index)}
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0 text-red-500"
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -579,9 +410,7 @@ const Index = () => {
                         subtitle={subtitle}
                         ctaText={ctaText}
                         uploadedImage={uploadedImage}
-                        uploadedSvg={uploadedSvg900x1600}
                         uploadedLogo={uploadedLogo}
-                        svgGradient={svgGradient}
                         gradientAngle={gradientAngle}
                         gradientColors={gradientColors}
                         format="900x1600"
@@ -595,9 +424,7 @@ const Index = () => {
                         subtitle={subtitle}
                         ctaText={ctaText}
                         uploadedImage={uploadedImage}
-                        uploadedSvg={uploadedSvg1200x1200}
                         uploadedLogo={uploadedLogo}
-                        svgGradient={svgGradient}
                         gradientAngle={gradientAngle}
                         gradientColors={gradientColors}
                         format="1200x1200"
@@ -611,9 +438,7 @@ const Index = () => {
                         subtitle={subtitle}
                         ctaText={ctaText}
                         uploadedImage={uploadedImage}
-                        uploadedSvg={uploadedSvg1200x628}
                         uploadedLogo={uploadedLogo}
-                        svgGradient={svgGradient}
                         gradientAngle={gradientAngle}
                         gradientColors={gradientColors}
                         format="1200x628"
@@ -629,9 +454,7 @@ const Index = () => {
                     subtitle={subtitle}
                     ctaText={ctaText}
                     uploadedImage={uploadedImage}
-                    uploadedSvg={getCurrentSvg()}
                     uploadedLogo={uploadedLogo}
-                    svgGradient={svgGradient}
                     gradientAngle={gradientAngle}
                     gradientColors={gradientColors}
                     format={selectedFormat}

@@ -5,9 +5,7 @@ interface ImageCanvasProps {
   subtitle: string;
   ctaText: string;
   uploadedImage: string | null;
-  uploadedSvg: string | null;
   uploadedLogo: string | null;
-  svgGradient: string;
   gradientAngle?: number;
   gradientColors?: string[];
   format: '900x1600' | '1200x1200' | '1200x628';
@@ -21,7 +19,7 @@ interface ImageTransform {
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
-  ({ title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, svgGradient, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false }, ref) => {
+  ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
@@ -128,107 +126,20 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     };
 
     const applySvgGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
-      let gradient;
+      // Convert angle to radians and create directional gradient
+      const angleRad = (gradientAngle * Math.PI) / 180;
+      const x1 = x + width / 2 - Math.cos(angleRad) * width / 2;
+      const y1 = y + height / 2 - Math.sin(angleRad) * height / 2;
+      const x2 = x + width / 2 + Math.cos(angleRad) * width / 2;
+      const y2 = y + height / 2 + Math.sin(angleRad) * height / 2;
       
-      // Check for custom gradient
-      if (svgGradient === 'custom') {
-        // Convert angle to radians and create directional gradient
-        const angleRad = (gradientAngle * Math.PI) / 180;
-        const x1 = x + width / 2 - Math.cos(angleRad) * width / 2;
-        const y1 = y + height / 2 - Math.sin(angleRad) * height / 2;
-        const x2 = x + width / 2 + Math.cos(angleRad) * width / 2;
-        const y2 = y + height / 2 + Math.sin(angleRad) * height / 2;
-        
-        gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-        
-        // Add multiple colors with equal spacing
-        gradientColors.forEach((color, index) => {
-          const position = index / (gradientColors.length - 1);
-          gradient.addColorStop(position, color);
-        });
-        
-        return gradient;
-      }
+      const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
       
-      switch (svgGradient) {
-        case 'purple':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#a855f7');
-          gradient.addColorStop(0.5, '#7c3aed');
-          gradient.addColorStop(1, '#6b21a8');
-          break;
-        case 'blue':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#60a5fa');
-          gradient.addColorStop(0.5, '#3b82f6');
-          gradient.addColorStop(1, '#1d4ed8');
-          break;
-        case 'green':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#34d399');
-          gradient.addColorStop(0.5, '#10b981');
-          gradient.addColorStop(1, '#047857');
-          break;
-        case 'orange':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#fb923c');
-          gradient.addColorStop(0.5, '#f97316');
-          gradient.addColorStop(1, '#c2410c');
-          break;
-        case 'pink':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#f472b6');
-          gradient.addColorStop(0.5, '#ec4899');
-          gradient.addColorStop(1, '#be185d');
-          break;
-        case 'teal':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#5eead4');
-          gradient.addColorStop(0.5, '#14b8a6');
-          gradient.addColorStop(1, '#0f766e');
-          break;
-        case 'indigo':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#818cf8');
-          gradient.addColorStop(0.5, '#6366f1');
-          gradient.addColorStop(1, '#4338ca');
-          break;
-        case 'red':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#fb7185');
-          gradient.addColorStop(0.5, '#f43f5e');
-          gradient.addColorStop(1, '#be123c');
-          break;
-        case 'sunset':
-          gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-          gradient.addColorStop(0, '#f97316');
-          gradient.addColorStop(0.5, '#ec4899');
-          gradient.addColorStop(1, '#8b5cf6');
-          break;
-        case 'ocean':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#06b6d4');
-          gradient.addColorStop(0.5, '#3b82f6');
-          gradient.addColorStop(1, '#1e40af');
-          break;
-        case 'yellow':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#fbbf24');
-          gradient.addColorStop(0.5, '#f59e0b');
-          gradient.addColorStop(1, '#d97706');
-          break;
-        case 'cyan':
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#22d3ee');
-          gradient.addColorStop(0.5, '#06b6d4');
-          gradient.addColorStop(1, '#0891b2');
-          break;
-        default:
-          gradient = ctx.createLinearGradient(x, y, x, y + height);
-          gradient.addColorStop(0, '#a855f7');
-          gradient.addColorStop(0.5, '#7c3aed');
-          gradient.addColorStop(1, '#6b21a8');
-      }
+      // Add multiple colors with equal spacing
+      gradientColors.forEach((color, index) => {
+        const position = index / (gradientColors.length - 1);
+        gradient.addColorStop(position, color);
+      });
       
       return gradient;
     };
@@ -436,50 +347,63 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       };
 
-      if (uploadedSvg || getDefaultSvgPath()) {
-        try {
-          const svgImg = new Image();
-          svgImg.crossOrigin = 'anonymous';
-          
-          await new Promise((resolve, reject) => {
-            svgImg.onload = resolve;
-            svgImg.onerror = reject;
-            svgImg.src = uploadedSvg || getDefaultSvgPath();
-          });
+      try {
+        const svgImg = new Image();
+        svgImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          svgImg.onload = resolve;
+          svgImg.onerror = reject;
+          svgImg.src = getDefaultSvgPath();
+        });
 
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = svgPadding.width;
-          tempCanvas.height = svgPadding.height;
-          const tempCtx = tempCanvas.getContext('2d');
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = svgPadding.width;
+        tempCanvas.height = svgPadding.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        if (tempCtx) {
+          // Create gradient using custom colors and angle
+          const angleRad = (gradientAngle * Math.PI) / 180;
+          const x1 = svgPadding.width / 2 - Math.cos(angleRad) * svgPadding.width / 2;
+          const y1 = svgPadding.height / 2 - Math.sin(angleRad) * svgPadding.height / 2;
+          const x2 = svgPadding.width / 2 + Math.cos(angleRad) * svgPadding.width / 2;
+          const y2 = svgPadding.height / 2 + Math.sin(angleRad) * svgPadding.height / 2;
           
-          if (tempCtx) {
-            const gradientFill = applySvgGradient(tempCtx, 0, 0, svgPadding.width, svgPadding.height);
-            if (gradientFill) {
-              tempCtx.fillStyle = gradientFill;
-              tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
-              
-              tempCtx.globalCompositeOperation = 'destination-in';
-              tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
-              
-              ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
-            }
-          }
-        } catch (error) {
-          console.error('Error loading SVG:', error);
-          const fallbackGradient = applySvgGradient(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
-          if (fallbackGradient) {
-            ctx.fillStyle = fallbackGradient;
-            drawRoundedRect(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height, 40);
-            ctx.fill();
-          }
+          const gradient = tempCtx.createLinearGradient(x1, y1, x2, y2);
+          
+          // Add multiple colors with equal spacing
+          gradientColors.forEach((color, index) => {
+            const position = index / (gradientColors.length - 1);
+            gradient.addColorStop(position, color);
+          });
+          
+          tempCtx.fillStyle = gradient;
+          tempCtx.fillRect(0, 0, svgPadding.width, svgPadding.height);
+          
+          tempCtx.globalCompositeOperation = 'destination-in';
+          tempCtx.drawImage(svgImg, 0, 0, svgPadding.width, svgPadding.height);
+          
+          ctx.drawImage(tempCanvas, svgPadding.x, svgPadding.y);
         }
-      } else {
-        const defaultGradient = applySvgGradient(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height);
-        if (defaultGradient) {
-          ctx.fillStyle = defaultGradient;
-          drawRoundedRect(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height, 40);
-          ctx.fill();
-        }
+      } catch (error) {
+        console.error('Error loading SVG:', error);
+        // Create fallback gradient
+        const angleRad = (gradientAngle * Math.PI) / 180;
+        const x1 = svgPadding.x + svgPadding.width / 2 - Math.cos(angleRad) * svgPadding.width / 2;
+        const y1 = svgPadding.y + svgPadding.height / 2 - Math.sin(angleRad) * svgPadding.height / 2;
+        const x2 = svgPadding.x + svgPadding.width / 2 + Math.cos(angleRad) * svgPadding.width / 2;
+        const y2 = svgPadding.y + svgPadding.height / 2 + Math.sin(angleRad) * svgPadding.height / 2;
+        
+        const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+        gradientColors.forEach((color, index) => {
+          const position = index / (gradientColors.length - 1);
+          gradient.addColorStop(position, color);
+        });
+        
+        ctx.fillStyle = gradient;
+        drawRoundedRect(ctx, svgPadding.x, svgPadding.y, svgPadding.width, svgPadding.height, 40);
+        ctx.fill();
       }
 
       // Draw logo with improved quality
@@ -519,10 +443,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       }
 
-      // Draw title with UI sans serif and font weight 700
+      // Draw title with HalyardDisplay Medium
       const { titlePos, titleFontSize, textMaxWidth } = layout;
       ctx.fillStyle = 'white';
-      ctx.font = `700 ${titleFontSize}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `500 ${titleFontSize}px HalyardDisplay, ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
@@ -555,10 +479,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       });
 
-      // Draw subtitle
+      // Draw subtitle with HalyardText Book
       const { subtitleFontSize } = layout;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = `400 ${subtitleFontSize}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `400 ${subtitleFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
       
       titleY -= 4;
       
@@ -585,16 +509,14 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         titleY += subtitleLineHeight;
       }
 
-      // Draw CTA button
+      // Draw CTA button with HalyardText Medium
       const { ctaHeight, ctaWidth, ctaFontSize } = layout;
       
       let buttonX, buttonY;
       if (format === '1200x1200' && layout.ctaPos) {
-        // For 1200x1200, use absolute positioning
         buttonX = layout.ctaPos.x;
         buttonY = layout.ctaPos.y;
       } else {
-        // For other formats, use relative positioning
         buttonX = titleX;
         buttonY = titleY - 2;
       }
@@ -605,9 +527,9 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       drawRoundedRect(ctx, buttonX, buttonY, ctaWidth, ctaHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text with font weight 500
+      // CTA text with HalyardText Medium
       ctx.fillStyle = '#000000';
-      ctx.font = `500 ${ctaFontSize}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `500 ${ctaFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + ctaWidth / 2, buttonY + ctaHeight / 2 + ctaFontSize / 3);
 
@@ -651,7 +573,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       ctx.clearRect(0, 0, width, height);
       
       drawCard(ctx);
-    }, [title, subtitle, ctaText, uploadedImage, uploadedSvg, uploadedLogo, imageTransform, svgGradient, gradientAngle, gradientColors, format]);
+    }, [title, subtitle, ctaText, uploadedImage, imageTransform, gradientAngle, gradientColors, format]);
 
     const { width, height } = getCanvasDimensions();
     const maxDisplayWidth = format === '1200x628' ? 600 : 450;
