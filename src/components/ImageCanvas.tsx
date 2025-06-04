@@ -46,7 +46,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       switch (format) {
         case '900x1600':
           return {
-            svgPadding: { x: 75, y: 100, width: 750, height: 1400 },
+            svgPadding: { x: 75, y: 100, width: 750, height: 1401 },
             logoPos: { x: 50, y: 48, width: 220 },
             titlePos: { x: 50, y: 180 },
             titleFontSize: 54,
@@ -59,21 +59,21 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           };
         case '1200x1200':
           return {
-            svgPadding: { x: 50, y: 50, width: 1100, height: 1100 },
+            svgPadding: { x: 73, y: 50, width: 1054, height: 1027 },
             logoPos: { x: 126, y: 50 + 52, width: 220 },
-            titlePos: { x: 126, y: height - 138 - 80 }, // End at 138px from bottom
+            titlePos: { x: 126, y: height - 138 - 80 },
             titleFontSize: 54,
             subtitleFontSize: 34,
             ctaFontSize: 34,
             ctaHeight: 94,
             ctaPos: { x: width - 126 - 220, y: height - 144 - 94 },
-            imageArea: { x: (width - 970) / 2, y: 120, width: 970, height: 764 }, // Updated to 970x764, starting 120px from top
+            imageArea: { x: (width - 970) / 2, y: 120, width: 970, height: 764 },
             textMaxWidth: 650,
             ctaWidth: 220
           };
         case '1200x628':
           return {
-            svgPadding: { x: 50, y: 50, width: 1100, height: 528 },
+            svgPadding: { x: 54, y: 50, width: 1093, height: 520 },
             logoPos: { x: 50, y: 50, width: 220 },
             titlePos: { x: 50, y: 200 },
             titleFontSize: 44,
@@ -86,7 +86,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           };
         default:
           return {
-            svgPadding: { x: 75, y: 100, width: 750, height: 1400 },
+            svgPadding: { x: 75, y: 100, width: 750, height: 1401 },
             logoPos: { x: 50, y: 48, width: 220 },
             titlePos: { x: 50, y: 180 },
             titleFontSize: 54,
@@ -421,7 +421,21 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
       const { svgPadding } = layout;
 
-      if (uploadedSvg) {
+      // Add default SVG paths for each format
+      const getDefaultSvgPath = () => {
+        switch (format) {
+          case '900x1600':
+            return '/assets/900x1600.svg';
+          case '1200x1200':
+            return '/assets/1200x1200.svg';
+          case '1200x628':
+            return '/assets/1200x628.svg';
+          default:
+            return '/assets/900x1600.svg';
+        }
+      };
+
+      if (uploadedSvg || getDefaultSvgPath()) {
         try {
           const svgImg = new Image();
           svgImg.crossOrigin = 'anonymous';
@@ -429,7 +443,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           await new Promise((resolve, reject) => {
             svgImg.onload = resolve;
             svgImg.onerror = reject;
-            svgImg.src = uploadedSvg;
+            svgImg.src = uploadedSvg || getDefaultSvgPath();
           });
 
           const tempCanvas = document.createElement('canvas');
