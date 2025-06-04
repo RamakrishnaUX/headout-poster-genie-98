@@ -5,7 +5,7 @@ interface ImageCanvasProps {
   subtitle: string;
   ctaText: string;
   uploadedImage: string | null;
-  uploadedLogo: string | null;
+  uploadedLogo?: string | null;
   gradientAngle?: number;
   gradientColors?: string[];
   format: '900x1600' | '1200x1200' | '1200x628';
@@ -459,39 +459,37 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
       // Draw logo with improved quality
       const { logoPos } = layout;
-      if (uploadedLogo || defaultLogoPath) {
-        try {
-          const logoImg = new Image();
-          logoImg.crossOrigin = 'anonymous';
-          
-          await new Promise((resolve, reject) => {
-            logoImg.onload = resolve;
-            logoImg.onerror = reject;
-            logoImg.src = uploadedLogo || defaultLogoPath;
-          });
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          logoImg.onload = resolve;
+          logoImg.onerror = reject;
+          logoImg.src = defaultLogoPath;
+        });
 
-          // Enable image smoothing for better quality
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
 
-          const logoHeight = (logoImg.height / logoImg.width) * logoPos.width;
-          
-          // For 1200x1200, logo position is absolute, not relative to svgPadding
-          const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
-          const logoY = format === '1200x1200' ? logoPos.y : svgPadding.y + logoPos.y;
-          
-          ctx.drawImage(logoImg, logoX, logoY, logoPos.width, logoHeight);
-        } catch (error) {
-          console.error('Error loading logo:', error);
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 36px ui-sans-serif, system-ui, sans-serif';
-          ctx.textAlign = 'left';
-          
-          const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
-          const logoY = format === '1200x1200' ? logoPos.y + 36 : svgPadding.y + logoPos.y + 36;
-          
-          ctx.fillText('🏊 headout', logoX, logoY);
-        }
+        const logoHeight = (logoImg.height / logoImg.width) * logoPos.width;
+        
+        // For 1200x1200, logo position is absolute, not relative to svgPadding
+        const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
+        const logoY = format === '1200x1200' ? logoPos.y : svgPadding.y + logoPos.y;
+        
+        ctx.drawImage(logoImg, logoX, logoY, logoPos.width, logoHeight);
+      } catch (error) {
+        console.error('Error loading logo:', error);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 36px ui-sans-serif, system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        
+        const logoX = format === '1200x1200' ? logoPos.x : svgPadding.x + logoPos.x;
+        const logoY = format === '1200x1200' ? logoPos.y + 36 : svgPadding.y + logoPos.y + 36;
+        
+        ctx.fillText('🏊 headout', logoX, logoY);
       }
 
       // Draw title with HalyardDisplay Medium
