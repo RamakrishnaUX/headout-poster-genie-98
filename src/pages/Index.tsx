@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Download, Plus, Minus, Archive } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageCanvas from '@/components/ImageCanvas';
-import TourImageFetcher from '@/components/TourImageFetcher';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import '@/styles/fonts.css';
@@ -83,27 +82,22 @@ const Index = () => {
     };
 
     try {
-      // Create a folder in the zip for the images
       const imagesFolder = zip.folder("headout-posters");
       if (!imagesFolder) throw new Error("Could not create zip folder");
 
-      // Add each format to the zip
       for (const format of formats) {
         const canvas = canvasRefs[format].current;
         if (!canvas) continue;
 
-        // Convert canvas to blob
         const blob = await new Promise<Blob>((resolve) => {
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
           }, `image/${downloadFormat}`, downloadFormat === 'jpeg' ? 0.9 : undefined);
         });
 
-        // Add to zip
         imagesFolder.file(`headout-poster-${format}.${downloadFormat}`, blob);
       }
 
-      // Generate and download zip
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const link = document.createElement('a');
@@ -152,25 +146,28 @@ const Index = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="image">Image Source</Label>
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => fileInputRef.current?.click()}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Choose Image
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </div>
-                  <TourImageFetcher onImageSelect={(url) => setUploadedImage(url)} />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose Image
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <Input
+                    type="url"
+                    placeholder="Or paste an image URL"
+                    value={imageUrl}
+                    onChange={(e) => handleImageUrl(e.target.value)}
+                    className="flex-1"
+                  />
                 </div>
                 {uploadedImage && (
                   <p className="text-sm text-green-600">✓ Image uploaded! Hover over the bottom-right corner of the image to resize.</p>
