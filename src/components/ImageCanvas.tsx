@@ -57,20 +57,22 @@ interface LayoutConfig {
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
   ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false, enableGradient = false, isDownloadMode = false }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const rafRef = useRef<number>();
-    const lastDrawTime = useRef<number>(0);
-    const FRAME_RATE = 60;
-    const FRAME_INTERVAL = 1000 / FRAME_RATE;
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
-    const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
     const [imageLoaded, setImageLoaded] = useState<HTMLImageElement | null>(null);
     const defaultLogoPath = '/assets/headout-logo.svg';
     const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const imageRef = useRef<HTMLImageElement | null>(null);
+    const transformRef = useRef(imageTransform);
+    const animationFrameRef = useRef<number>();
 
     useImperativeHandle(ref, () => canvasRef.current as HTMLCanvasElement);
+
+    // Keep transform ref in sync with state
+    useEffect(() => {
+      transformRef.current = imageTransform;
+    }, [imageTransform]);
 
     const getCanvasDimensions = () => {
       switch (format) {
@@ -267,7 +269,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           setIsDragging(true);
         }
         
-        setLastMousePos({ x: mouseX, y: mouseY });
+        dragStart.current = { x: mouseX, y: mouseY };
         event.preventDefault();
       }
     }, [uploadedImage, imageLoaded]);
@@ -276,55 +278,72 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       if (!isDragging && !isResizing) return;
       
       e.preventDefault();
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = (e.clientX - rect.left) * (width / rect.width);
-      const y = (e.clientY - rect.top) * (height / rect.height);
+      const canvas = e.currentTarget;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
       
-      if (isResizing && uploadedImage) {
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      
+      if (!dragStart.current) {
+        dragStart.current = { x, y };
+        return;
+      }
+
+      if (isResizing && imageRef.current) {
         const bounds = getImageBounds();
         const dx = x - dragStart.current.x;
         const dy = y - dragStart.current.y;
-        const aspectRatio = imageRef.current!.width / imageRef.current!.height;
         
-        let newScale = imageTransform.scale;
+        let newScale = transformRef.current.scale;
         if (Math.abs(dx) > Math.abs(dy)) {
-          newScale = (bounds.width + dx) / imageRef.current!.width;
+          const targetWidth = bounds.width + dx;
+          newScale = targetWidth / bounds.width * transformRef.current.scale;
         } else {
-          newScale = (bounds.height + dy) / imageRef.current!.height;
+          const targetHeight = bounds.height + dy;
+          newScale = targetHeight / bounds.height * transformRef.current.scale;
         }
         
         newScale = Math.max(0.1, Math.min(5, newScale));
-        requestRender({ ...imageTransform, scale: newScale });
-      } else if (isDragging && uploadedImage) {
+        
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setImageTransform(prev => ({
+            ...prev,
+            scale: newScale
+          }));
+        });
+      } else if (isDragging && imageRef.current) {
         const dx = x - dragStart.current.x;
         const dy = y - dragStart.current.y;
-        requestRender({
-          x: imageTransform.x + dx,
-          y: imageTransform.y + dy,
-          scale: imageTransform.scale
+        
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setImageTransform(prev => ({
+            ...prev,
+            x: prev.x + dx,
+            y: prev.y + dy
+          }));
         });
       }
       
       dragStart.current = { x, y };
     };
 
-    const requestRender = (newTransform: typeof imageTransform) => {
-      const now = performance.now();
-      if (now - lastDrawTime.current >= FRAME_INTERVAL) {
-        if (rafRef.current) {
-          cancelAnimationFrame(rafRef.current);
-        }
-        
-        rafRef.current = requestAnimationFrame(() => {
-          setImageTransform(newTransform);
-          lastDrawTime.current = now;
-        });
-      }
-    };
-
     const handleMouseUp = useCallback(() => {
       setIsDragging(false);
       setIsResizing(false);
+      dragStart.current = { x: 0, y: 0 };
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     }, []);
 
     const drawCard = async (ctx: CanvasRenderingContext2D) => {
@@ -359,21 +378,17 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             drawY = -(drawHeight - height) / 2;
           }
 
+          // Apply background image transformations
           const scale = 1.02;
           drawWidth *= scale;
           drawHeight *= scale;
           drawX -= (drawWidth - width) / 2;
           drawY -= (drawHeight - height) / 2;
 
-          const transformScale = 0.2;
+          // Apply pan transformations to background
+          const transformScale = 0.1; // Reduced from 0.2 to make background move less
           drawX += imageTransform.x * transformScale;
           drawY += imageTransform.y * transformScale;
-          
-          const scaleOffset = (imageTransform.scale - 1) * transformScale;
-          drawWidth *= (1 + scaleOffset);
-          drawHeight *= (1 + scaleOffset);
-          drawX -= (drawWidth * scaleOffset) / 2;
-          drawY -= (drawHeight * scaleOffset) / 2;
 
           ctx.filter = 'blur(15px) brightness(0.7)';
           ctx.drawImage(bgImg, drawX, drawY, drawWidth, drawHeight);
@@ -696,6 +711,14 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       
       drawCard(ctx);
     }, [title, subtitle, ctaText, uploadedImage, imageTransform, gradientAngle, gradientColors, format]);
+
+    useEffect(() => {
+      return () => {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
+    }, []);
 
     const { width, height } = getCanvasDimensions();
     const maxDisplayWidth = format === '1200x628' ? 600 : 450;
