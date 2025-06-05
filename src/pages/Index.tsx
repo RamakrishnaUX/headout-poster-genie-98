@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Download, Plus, Minus, Archive } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageCanvas from '@/components/ImageCanvas';
+import TourImageFetcher from '@/components/TourImageFetcher';
 import { useToast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import '@/styles/fonts.css';
@@ -151,8 +152,8 @@ const Index = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="image">Image Source</Label>
-                <div className="flex gap-4">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
                     <Button
                       onClick={() => fileInputRef.current?.click()}
                       variant="outline"
@@ -169,15 +170,7 @@ const Index = () => {
                       className="hidden"
                     />
                   </div>
-                  <div className="flex-1">
-                    <Input
-                      id="imageUrl"
-                      value={imageUrl}
-                      onChange={(e) => handleImageUrl(e.target.value)}
-                      placeholder="Or enter image URL"
-                      className="w-full"
-                    />
-                  </div>
+                  <TourImageFetcher onImageSelect={(url) => setUploadedImage(url)} />
                 </div>
                 {uploadedImage && (
                   <p className="text-sm text-green-600">✓ Image uploaded! Hover over the bottom-right corner of the image to resize.</p>

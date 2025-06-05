@@ -1,7 +1,7 @@
 @font-face {
   font-family: 'HalyardDisplay';
   src: url('/fonts/HalyardDisplay-Medium.otf') format('opentype');
-  font-weight: 500;
+  font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
@@ -9,7 +9,7 @@
 @font-face {
   font-family: 'HalyardText';
   src: url('/fonts/HalyardText-Book.otf') format('opentype');
-  font-weight: 400;
+  font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
@@ -17,7 +17,7 @@
 @font-face {
   font-family: 'HalyardText';
   src: url('/fonts/HalyardText-Medium.otf') format('opentype');
-  font-weight: 500;
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 } 
