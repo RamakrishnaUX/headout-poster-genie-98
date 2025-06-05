@@ -16,6 +16,7 @@ const Index = () => {
   const [subtitle, setSubtitle] = useState('Caribe Aquatic Park from €29!');
   const [ctaText, setCtaText] = useState('Book now');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
   const [selectedFormat, setSelectedFormat] = useState<'900x1600' | '1200x1200' | '1200x628'>('900x1600');
   const [downloadFormat, setDownloadFormat] = useState<'png' | 'jpeg'>('png');
   const [gradientAngle, setGradientAngle] = useState(45);
@@ -43,8 +44,16 @@ const Index = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
+        setImageUrl(''); // Clear URL when file is uploaded
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageUrl = (url: string) => {
+    setImageUrl(url);
+    if (url) {
+      setUploadedImage(url);
     }
   };
 
@@ -142,25 +151,39 @@ const Index = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="image">Upload Image</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose Image
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choose Image
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="imageUrl">Or enter image URL</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="imageUrl"
+                        value={imageUrl}
+                        onChange={(e) => handleImageUrl(e.target.value)}
+                        placeholder="https://example.com/image.jpg"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
                 </div>
                 {uploadedImage && (
-                  <p className="text-sm text-green-600">✓ Image uploaded successfully</p>
+                  <p className="text-sm text-green-600">✓ Image loaded successfully</p>
                 )}
               </div>
 

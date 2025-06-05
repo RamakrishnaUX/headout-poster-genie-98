@@ -60,6 +60,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
+    const [isHoveringResizeHandle, setIsHoveringResizeHandle] = useState(false);
     const [imageLoaded, setImageLoaded] = useState<HTMLImageElement | null>(null);
     const defaultLogoPath = '/assets/headout-logo.svg';
     const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -239,6 +240,18 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       return gradient;
     };
 
+    const isOverResizeHandle = (mouseX: number, mouseY: number) => {
+      if (!uploadedImage || !imageLoaded) return false;
+      
+      const bounds = getImageBounds();
+      const cornerThreshold = 30;
+      
+      return mouseX >= bounds.x + bounds.width - cornerThreshold && 
+             mouseX <= bounds.x + bounds.width &&
+             mouseY >= bounds.y + bounds.height - cornerThreshold &&
+             mouseY <= bounds.y + bounds.height;
+    };
+
     const handleMouseDown = useCallback((event: React.MouseEvent) => {
       if (!uploadedImage || !imageLoaded) return;
       
@@ -258,12 +271,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
           mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
         
-        // Check if clicking near corners for resize (30px threshold)
-        const cornerThreshold = 30;
-        const isNearCorner = 
-          (mouseX >= bounds.x + bounds.width - cornerThreshold && mouseY >= bounds.y + bounds.height - cornerThreshold);
-        
-        if (isNearCorner) {
+        if (isOverResizeHandle(mouseX, mouseY)) {
           setIsResizing(true);
         } else {
           setIsDragging(true);
@@ -275,16 +283,25 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
     }, [uploadedImage, imageLoaded]);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!isDragging && !isResizing) return;
-      
-      e.preventDefault();
       const canvas = e.currentTarget;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+
+      // Update resize handle hover state
+      if (!isDownloadMode && !isDragging && !isResizing) {
+        setIsHoveringResizeHandle(isOverResizeHandle(mouseX, mouseY));
+      }
+
+      if (!isDragging && !isResizing) return;
+      
+      e.preventDefault();
+      
+      const x = mouseX;
+      const y = mouseY;
       
       if (!dragStart.current) {
         dragStart.current = { x, y };
@@ -729,15 +746,19 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ref={canvasRef}
         width={width}
         height={height}
-        className="border border-gray-200 rounded-lg shadow-lg max-w-full h-auto cursor-pointer select-none"
+        className="border border-gray-200 rounded-lg shadow-lg max-w-full h-auto select-none"
         style={{ 
           maxWidth: `${maxDisplayWidth}px`, 
-          height: displayHeight 
+          height: displayHeight,
+          cursor: isHoveringResizeHandle ? 'se-resize' : isDragging ? 'move' : 'default'
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={(e) => {
+          handleMouseUp();
+          setIsHoveringResizeHandle(false);
+        }}
       />
     );
   }
