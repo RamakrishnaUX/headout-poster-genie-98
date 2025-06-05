@@ -150,9 +150,9 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="image">Upload Image</Label>
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
+                <Label htmlFor="image">Image Source</Label>
+                <div className="flex gap-4">
+                  <div className="flex-1">
                     <Button
                       onClick={() => fileInputRef.current?.click()}
                       variant="outline"
@@ -169,21 +169,18 @@ const Index = () => {
                       className="hidden"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="imageUrl">Or enter image URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="imageUrl"
-                        value={imageUrl}
-                        onChange={(e) => handleImageUrl(e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                        className="flex-1"
-                      />
-                    </div>
+                  <div className="flex-1">
+                    <Input
+                      id="imageUrl"
+                      value={imageUrl}
+                      onChange={(e) => handleImageUrl(e.target.value)}
+                      placeholder="Or enter image URL"
+                      className="w-full"
+                    />
                   </div>
                 </div>
                 {uploadedImage && (
-                  <p className="text-sm text-green-600">✓ Image loaded successfully</p>
+                  <p className="text-sm text-green-600">✓ Image uploaded! Hover over the bottom-right corner of the image to resize.</p>
                 )}
               </div>
 
