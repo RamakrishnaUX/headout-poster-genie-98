@@ -20,15 +20,55 @@ interface ImageTransform {
   scale: number;
 }
 
+interface LayoutConfig {
+  svgPadding: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  logoPos: {
+    x: number;
+    y: number;
+    width: number;
+  };
+  titlePos: {
+    x: number;
+    y: number;
+  };
+  titleFontSize: number;
+  subtitleFontSize: number;
+  ctaFontSize: number;
+  ctaHeight: number;
+  imageArea: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  textMaxWidth: number;
+  isDoubleLine?: boolean;
+  ctaPos?: {
+    x: number;
+    y: number;
+  };
+}
+
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
   ({ title, subtitle, ctaText, uploadedImage, uploadedLogo, gradientAngle = 45, gradientColors = ['#a855f7', '#6b21a8'], format, hideControls = false, enableGradient = false, isDownloadMode = false }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const rafRef = useRef<number>();
+    const lastDrawTime = useRef<number>(0);
+    const FRAME_RATE = 60;
+    const FRAME_INTERVAL = 1000 / FRAME_RATE;
     const [imageTransform, setImageTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 });
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
     const [imageLoaded, setImageLoaded] = useState<HTMLImageElement | null>(null);
     const defaultLogoPath = '/assets/headout-logo.svg';
+    const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const imageRef = useRef<HTMLImageElement | null>(null);
 
     useImperativeHandle(ref, () => canvasRef.current as HTMLCanvasElement);
 
@@ -55,9 +95,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             imageArea: { x: 130, y: 597, width: 640, height: 836 },
-            textMaxWidth: 650,
-            ctaWidth: 220
-          };
+            textMaxWidth: 650
+          } as LayoutConfig;
         case '1200x1200': {
           // Create a temporary canvas context to measure text
           const tempCanvas = document.createElement('canvas');
@@ -83,7 +122,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             }
 
             // Return layout config based on line count
-            return {
+            const config: LayoutConfig = {
               svgPadding: { x: 73, y: 87, width: 1054, height: 1027 },
               logoPos: { x: 130, y: 140, width: 220 },
               titlePos: { x: 130, y: lineCount > 1 ? 940 : 1000 },
@@ -91,15 +130,21 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
               subtitleFontSize: 34,
               ctaFontSize: 34,
               ctaHeight: 94,
-              ctaPos: { x: width - 102 - 250, y: height - 144 - 90 },
               imageArea: { x: (width - 970) / 2, y: 134, width: 970, height: 764 },
               textMaxWidth: 650,
-              ctaWidth: 220,
               isDoubleLine: lineCount > 1
             };
+
+            return {
+              ...config,
+              ctaPos: { 
+                x: config.svgPadding.x + config.svgPadding.width - 50, 
+                y: height - 144 - 90 
+              }
+            } as LayoutConfig;
           }
           // Fallback if context creation fails
-          return {
+          const fallbackConfig: LayoutConfig = {
             svgPadding: { x: 73, y: 87, width: 1054, height: 1027 },
             logoPos: { x: 130, y: 140, width: 220 },
             titlePos: { x: 130, y: 1000 },
@@ -107,12 +152,18 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             subtitleFontSize: 34,
             ctaFontSize: 34,
             ctaHeight: 94,
-            ctaPos: { x: width - 102 - 250, y: height - 144 - 90 },
             imageArea: { x: (width - 970) / 2, y: 134, width: 970, height: 764 },
             textMaxWidth: 650,
-            ctaWidth: 220,
             isDoubleLine: false
           };
+
+          return {
+            ...fallbackConfig,
+            ctaPos: { 
+              x: fallbackConfig.svgPadding.x + fallbackConfig.svgPadding.width - 50, 
+              y: height - 144 - 90 
+            }
+          } as LayoutConfig;
         }
         case '1200x628':
           return {
@@ -124,9 +175,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 76,
             imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 450 },
-            textMaxWidth: 450,
-            ctaWidth: 220
-          };
+            textMaxWidth: 450
+          } as LayoutConfig;
         default:
           return {
             svgPadding: { x: 75, y: 100, width: 750, height: 1401 },
@@ -137,9 +187,8 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             imageArea: { x: 130, y: 597, width: 640, height: 836 },
-            textMaxWidth: 650,
-            ctaWidth: 220
-          };
+            textMaxWidth: 650
+          } as LayoutConfig;
       }
     };
 
@@ -223,39 +272,55 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       }
     }, [uploadedImage, imageLoaded]);
 
-    const handleMouseMove = useCallback((event: React.MouseEvent) => {
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!isDragging && !isResizing) return;
       
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      e.preventDefault();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (width / rect.width);
+      const y = (e.clientY - rect.top) * (height / rect.height);
       
-      const mouseX = (event.clientX - rect.left) * scaleX;
-      const mouseY = (event.clientY - rect.top) * scaleY;
-
-      const deltaX = mouseX - lastMousePos.x;
-      const deltaY = mouseY - lastMousePos.y;
-
-      if (isDragging) {
-        setImageTransform(prev => ({
-          ...prev,
-          x: prev.x + deltaX,
-          y: prev.y + deltaY
-        }));
-      } else if (isResizing) {
-        const scaleFactor = 1 + (deltaX + deltaY) / 300;
-        setImageTransform(prev => ({
-          ...prev,
-          scale: Math.max(0.1, Math.min(5, prev.scale * scaleFactor))
-        }));
+      if (isResizing && uploadedImage) {
+        const bounds = getImageBounds();
+        const dx = x - dragStart.current.x;
+        const dy = y - dragStart.current.y;
+        const aspectRatio = imageRef.current!.width / imageRef.current!.height;
+        
+        let newScale = imageTransform.scale;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          newScale = (bounds.width + dx) / imageRef.current!.width;
+        } else {
+          newScale = (bounds.height + dy) / imageRef.current!.height;
+        }
+        
+        newScale = Math.max(0.1, Math.min(5, newScale));
+        requestRender({ ...imageTransform, scale: newScale });
+      } else if (isDragging && uploadedImage) {
+        const dx = x - dragStart.current.x;
+        const dy = y - dragStart.current.y;
+        requestRender({
+          x: imageTransform.x + dx,
+          y: imageTransform.y + dy,
+          scale: imageTransform.scale
+        });
       }
+      
+      dragStart.current = { x, y };
+    };
 
-      setLastMousePos({ x: mouseX, y: mouseY });
-      event.preventDefault();
-    }, [isDragging, isResizing, lastMousePos]);
+    const requestRender = (newTransform: typeof imageTransform) => {
+      const now = performance.now();
+      if (now - lastDrawTime.current >= FRAME_INTERVAL) {
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+        }
+        
+        rafRef.current = requestAnimationFrame(() => {
+          setImageTransform(newTransform);
+          lastDrawTime.current = now;
+        });
+      }
+    };
 
     const handleMouseUp = useCallback(() => {
       setIsDragging(false);
@@ -337,6 +402,7 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
           await new Promise((resolve, reject) => {
             img.onload = () => {
               setImageLoaded(img);
+              imageRef.current = img;
               resolve(null);
             };
             img.onerror = reject;
@@ -559,11 +625,24 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       }
 
       // Draw CTA button with HalyardText Medium
-      const { ctaHeight, ctaWidth, ctaFontSize } = layout;
+      const { ctaHeight, ctaFontSize } = layout;
+      
+      // Calculate CTA button width based on text
+      ctx.font = `500 ${ctaFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
+      const ctaMetrics = ctx.measureText(ctaText);
+      let calculatedCtaWidth = Math.ceil(ctaMetrics.width + 48); // Add padding
+      
+      // Apply format-specific constraints
+      let ctaWidth;
+      if (format === '1200x1200') {
+        ctaWidth = Math.min(240, calculatedCtaWidth); // Max 240px for 1200x1200
+      } else {
+        ctaWidth = calculatedCtaWidth; // Dynamic width for other formats
+      }
       
       let buttonX, buttonY;
       if (format === '1200x1200' && layout.ctaPos) {
-        buttonX = layout.ctaPos.x;
+        buttonX = layout.ctaPos.x - ctaWidth; // Right align by subtracting width
         buttonY = layout.ctaPos.y;
       } else {
         buttonX = titleX;
@@ -578,7 +657,6 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
 
       // CTA text with HalyardText Medium
       ctx.fillStyle = '#000000';
-      ctx.font = `500 ${ctaFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(ctaText, buttonX + ctaWidth / 2, buttonY + ctaHeight / 2 + ctaFontSize / 3);
 
