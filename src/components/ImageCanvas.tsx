@@ -52,6 +52,9 @@ interface LayoutConfig {
     x: number;
     y: number;
   };
+  titleFontWeight: string;
+  subtitleFontWeight: string;
+  ctaFontWeight: string;
 }
 
 const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
@@ -98,14 +101,17 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             imageArea: { x: 130, y: 597, width: 640, height: 836 },
-            textMaxWidth: 650
+            textMaxWidth: 650,
+            titleFontWeight: '400',
+            subtitleFontWeight: '300',
+            ctaFontWeight: '400'
           } as LayoutConfig;
         case '1200x1200': {
           // Create a temporary canvas context to measure text
           const tempCanvas = document.createElement('canvas');
           const tempCtx = tempCanvas.getContext('2d');
           if (tempCtx) {
-            tempCtx.font = `500 50px HalyardDisplay, ui-sans-serif, system-ui, sans-serif`;
+            tempCtx.font = `400 50px HalyardDisplay, ui-sans-serif, system-ui, sans-serif`;
             
             // Calculate if text will wrap to multiple lines
             const words = title.split(' ');
@@ -135,7 +141,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
               ctaHeight: 94,
               imageArea: { x: (width - 970) / 2, y: 134, width: 970, height: 764 },
               textMaxWidth: 650,
-              isDoubleLine: lineCount > 1
+              isDoubleLine: lineCount > 1,
+              titleFontWeight: '400',
+              subtitleFontWeight: '300',
+              ctaFontWeight: '400'
             };
 
             return {
@@ -157,7 +166,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaHeight: 94,
             imageArea: { x: (width - 970) / 2, y: 134, width: 970, height: 764 },
             textMaxWidth: 650,
-            isDoubleLine: false
+            isDoubleLine: false,
+            titleFontWeight: '400',
+            subtitleFontWeight: '300',
+            ctaFontWeight: '400'
           };
 
           return {
@@ -178,7 +190,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 76,
             imageArea: { x: width - 100 - 510, y: 98, width: 510, height: 450 },
-            textMaxWidth: 450
+            textMaxWidth: 450,
+            titleFontWeight: '400',
+            subtitleFontWeight: '300',
+            ctaFontWeight: '400'
           } as LayoutConfig;
         default:
           return {
@@ -190,7 +205,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
             ctaFontSize: 34,
             ctaHeight: 94,
             imageArea: { x: 130, y: 597, width: 640, height: 836 },
-            textMaxWidth: 650
+            textMaxWidth: 650,
+            titleFontWeight: '400',
+            subtitleFontWeight: '300',
+            ctaFontWeight: '400'
           } as LayoutConfig;
       }
     };
@@ -590,10 +608,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         ctx.fillText('🏊 headout', logoX, logoY);
       }
 
-      // Draw title with HalyardDisplay Medium
-      const { titlePos, titleFontSize, textMaxWidth } = layout;
+      // Draw title with HalyardDisplay Regular
+      const { titlePos, titleFontSize, textMaxWidth, titleFontWeight } = layout;
       ctx.fillStyle = 'white';
-      ctx.font = `500 ${titleFontSize}px HalyardDisplay, ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `${titleFontWeight} ${titleFontSize}px HalyardDisplay, ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = 'left';
       
       const titleLines = title.split('\n');
@@ -626,10 +644,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
         }
       });
 
-      // Draw subtitle with HalyardText Book
-      const { subtitleFontSize } = layout;
+      // Draw subtitle with HalyardText Light
+      const { subtitleFontSize, subtitleFontWeight } = layout;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = `400 ${subtitleFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `${subtitleFontWeight} ${subtitleFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
       
       titleY -= 4;
       
@@ -657,10 +675,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       }
 
       // Draw CTA button with HalyardText Medium
-      const { ctaHeight, ctaFontSize } = layout;
+      const { ctaHeight, ctaFontSize, ctaFontWeight } = layout;
       
       // Calculate CTA button width based on text
-      ctx.font = `500 ${ctaFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `${ctaFontWeight} ${ctaFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
       const ctaMetrics = ctx.measureText(ctaText);
       let calculatedCtaWidth = Math.ceil(ctaMetrics.width + 48); // Add padding
       
@@ -687,9 +705,10 @@ const ImageCanvas = forwardRef<HTMLCanvasElement, ImageCanvasProps>(
       drawRoundedRect(ctx, buttonX, buttonY, ctaWidth, ctaHeight, buttonRadius);
       ctx.fill();
 
-      // CTA text with HalyardText Medium
+      // CTA text with HalyardText Regular
       ctx.fillStyle = '#000000';
       ctx.textAlign = 'center';
+      ctx.font = `${ctaFontWeight} ${ctaFontSize}px HalyardText, ui-sans-serif, system-ui, sans-serif`;
       ctx.fillText(ctaText, buttonX + ctaWidth / 2, buttonY + ctaHeight / 2 + ctaFontSize / 3);
 
       // Draw invisible resize handle if not in download mode and image is loaded
